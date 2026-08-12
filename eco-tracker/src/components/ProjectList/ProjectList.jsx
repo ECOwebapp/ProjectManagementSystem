@@ -2,8 +2,13 @@
 import { useState, useEffect } from 'react';
 import { getProjects } from '../../data/projectsRepo.js';
 import FilterBar from '../shared/FilterBar.jsx';
-import Badge, { categoryVariant, progressVariant, progressLabel, formatCurrency } from '../shared/Badge.jsx';
+import Badge, { categoryVariant, formatCurrency } from '../shared/Badge.jsx';
 import AddProjectForm from '../Forms/AddProjectForm.jsx';
+
+function isInternalContractor(name = '') {
+  const lower = name.toLowerCase();
+  return lower.includes('administration') || lower.includes('admin') || lower.includes('internal');
+}
 
 function StatsBar({ projects }) {
   const total     = projects.length;
@@ -49,11 +54,8 @@ function StatsBar({ projects }) {
       <div className="stat-card stat-proposed">
         <div className="stat-icon proposed">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
         </div>
         <div className="stat-info">
@@ -80,8 +82,9 @@ function StatsBar({ projects }) {
 
 export default function ProjectList({ onSelectProject }) {
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [showAddProject, setShowAddProject] = useState(false);
@@ -142,13 +145,21 @@ export default function ProjectList({ onSelectProject }) {
       <StatsBar projects={projects} />
 
       <div className="page-header">
-        <div>
-          <h1 className="page-title">ECO Infrastructure Projects</h1>
-          <p className="page-subtitle">
-            {filtered.length} project{filtered.length !== 1 ? 's' : ''} shown
-            {filter !== 'All' ? ` · ${filter}` : ''}
-            {search ? ` · searching "${search}"` : ''}
-          </p>
+        <div className="page-title-row">
+          <div className="page-icon-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="page-title">Infrastructure Projects</h1>
+            <p className="page-subtitle">
+              Showing {filtered.length} of {projects.length} projects
+              {filter !== 'All' ? ` · ${filter}` : ''}
+              {search ? ` · searching "${search}"` : ''}
+            </p>
+          </div>
         </div>
         <button
           className="btn btn-primary"
@@ -178,22 +189,14 @@ export default function ProjectList({ onSelectProject }) {
                 <th>Category</th>
                 <th>Contractor(s)</th>
                 <th>Contract Amount</th>
-                <th>Progress</th>
                 <th>Completion Date</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((p, i) => {
-                const progress = p.progressUpdates?.[0] ?? null;
-                const slip = progress?.slippage_percent ?? null;
                 const amount = p.revised_contract_amount ?? p.original_contract_amount;
                 const contractorNames = (p.contractors || []).map(c => c.contractor_name).filter(Boolean);
                 const completionDate = p.new_completion_date || p.original_completion_date;
-
-                const fillClass = slip === null || slip === undefined ? 'fill-gray'
-                  : slip >= 0 ? 'fill-green'
-                  : slip >= -10 ? 'fill-amber'
-                  : 'fill-red';
 
                 return (
                   <tr
@@ -217,12 +220,17 @@ export default function ProjectList({ onSelectProject }) {
                     <td style={{ maxWidth: 220 }}>
                       {contractorNames.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-                          {contractorNames.map((n, i2) => (
-                            <span key={i2} className="chip-contractor">{n}</span>
-                          ))}
+                          {contractorNames.map((n, i2) => {
+                            const isInternal = isInternalContractor(n);
+                            return (
+                              <span key={i2} className={isInternal ? "chip-contractor-internal" : "chip-contractor"}>
+                                {n}
+                              </span>
+                            );
+                          })}
                         </div>
                       ) : (
-                        <span className="text-muted">—</span>
+                        <span className="chip-contractor-muted">Not yet awarded</span>
                       )}
                     </td>
                     <td>
@@ -230,32 +238,13 @@ export default function ProjectList({ onSelectProject }) {
                         <span className="contract-amount-text">
                           {formatCurrency(amount)}
                         </span>
-                      ) : <span className="text-muted">—</span>}
-                    </td>
-                    <td>
-                      {progress && progress.actual_percent != null ? (
-                        <div className="progress-column-wrap">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span className="text-xs text-muted" style={{ fontWeight: 600 }}>
-                              {progress.actual_percent?.toFixed(1)}%
-                            </span>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: (slip ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                              {progressLabel(slip)}
-                            </span>
-                          </div>
-                          <div className="progress-track-thin">
-                            <div
-                              className={`progress-fill-thin ${fillClass}`}
-                              style={{ width: `${Math.min(100, Math.max(0, progress.actual_percent ?? 0))}%` }}
-                            />
-                          </div>
-                        </div>
                       ) : (
-                        <span className="text-muted">—</span>
+                        <span className="text-pending">Not yet costed</span>
                       )}
                     </td>
+
                     <td className="text-sm text-muted" style={{ whiteSpace: 'nowrap' }}>
-                      {completionDate || '—'}
+                      {completionDate ? completionDate : <span className="text-pending">TBD</span>}
                     </td>
                   </tr>
                 );
