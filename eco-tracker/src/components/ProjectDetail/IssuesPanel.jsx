@@ -59,12 +59,8 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', marginBottom: 'var(--sp-2)' }}>
           {selectedPerson && <Avatar name={selectedPerson.name} size="sm" />}
-          <select
-            className="form-select"
-            value={selectedId}
-            onChange={e => setSelectedId(e.target.value)}
-            style={{ flex: 1, padding: '4px 8px', fontSize: 11 }}
-          >
+          <select className="form-select" value={selectedId} onChange={e => setSelectedId(e.target.value)}
+            style={{ flex: 1, padding: '4px 8px', fontSize: 11 }}>
             {personnel.map(p => (
               <option key={p.personnel_id} value={p.personnel_id}>
                 {p.name}{p.title ? ` (${p.title})` : ''}
@@ -86,14 +82,9 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
           </div>
         )}
 
-        <textarea
-          className="form-textarea"
-          rows={2}
-          value={text}
-          onChange={e => setText(e.target.value)}
+        <textarea className="form-textarea" rows={2} value={text} onChange={e => setText(e.target.value)}
           placeholder={isReply ? 'Write a reply…' : 'Add a comment on this item…'}
-          style={{ fontSize: 12, marginBottom: 'var(--sp-2)' }}
-        />
+          style={{ fontSize: 12, marginBottom: 'var(--sp-2)' }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
           {onCancel && (
             <button type="button" className="btn btn-ghost btn-xs" onClick={onCancel}>Cancel</button>
@@ -109,7 +100,7 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
 
 /* ─── Single comment bubble ───────────────────────────────────── */
 function IssueCommentItem({ comment, replies, projectNo, onReload }) {
-  const [showReply, setShowReply]       = useState(false);
+  const [showReply, setShowReply]         = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const isResolved = comment.is_resolved;
 
@@ -138,8 +129,8 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={doResolve}
-        title="Unlock Comment Resolution"
-        description="Enter authorization password to resolve/unresolve comment."
+        title="Authorization Required"
+        description="Enter authorization password to resolve/unresolve this comment."
       />
 
       <Avatar name={comment.commenter_name} size="sm" />
@@ -180,8 +171,7 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
 
         {showReply && (
           <IssueCommentForm
-            projectNo={projectNo}
-            isReply
+            projectNo={projectNo} isReply
             onCancel={() => setShowReply(false)}
             onSubmit={handleReply}
           />
@@ -229,19 +219,12 @@ function IssueCommentThread({ projectNo, issueId }) {
           {topLevel.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
               {topLevel.map(c => (
-                <IssueCommentItem
-                  key={c.comment_id}
-                  comment={c}
-                  replies={replyMap[c.comment_id] || []}
-                  projectNo={projectNo}
-                  onReload={reload}
-                />
+                <IssueCommentItem key={c.comment_id} comment={c}
+                  replies={replyMap[c.comment_id] || []} projectNo={projectNo} onReload={reload} />
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted" style={{ marginBottom: 8 }}>
-              No comments yet. Be the first to comment.
-            </p>
+            <p className="text-xs text-muted" style={{ marginBottom: 8 }}>No comments yet. Be the first to comment.</p>
           )}
           <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={({ personnelId, commenterName, text }) => {
             addComment({ projectNo, personnelId, commenterName, text, targetField: issueId });
@@ -253,14 +236,13 @@ function IssueCommentThread({ projectNo, issueId }) {
   );
 }
 
-/* ─── Inline edit row with Kebab Menu ─────────────────────────── */
+/* ─── Issue Row with password-on-save ────────────────────────── */
 function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
-  const [editing, setEditing]       = useState(false);
-  const [draft, setDraft]           = useState(issue.description || '');
-  const [draftStatus, setDraftStatus] = useState(
+  const [editing, setEditing]           = useState(false);
+  const [draft, setDraft]               = useState(issue.description || '');
+  const [draftStatus, setDraftStatus]   = useState(
     (issue.status === 'Resolved' || issue.status === 'Closed') ? 'Resolved' : 'On-going'
   );
-  const [busy, setBusy]             = useState(false);
 
   // Kebab menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -287,72 +269,79 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  function handleSave() {
-    if (!draft.trim()) return;
-    setBusy(true);
-    updateIssue(projectNo, issue.issue_id, { description: draft.trim(), status: draftStatus });
-    onChanged(issue.issue_id, { description: draft.trim(), status: draftStatus });
-    setEditing(false);
-    setBusy(false);
+  /* Opens freely — no password yet */
+  function openEdit() {
+    setDraft(issue.description || '');
+    setDraftStatus(currentStatus);
+    setEditing(true);
+    setMenuOpen(false);
   }
 
-  function doToggleStatus() {
+  /* Execute actions (called after auth) */
+  function executeStatusToggle() {
     const nextStatus = isResolved ? 'On-going' : 'Resolved';
     updateIssue(projectNo, issue.issue_id, { status: nextStatus });
     onChanged(issue.issue_id, { status: nextStatus });
+    setPendingAction(null);
   }
 
+  function executeSaveEdit() {
+    if (!draft.trim()) return;
+    updateIssue(projectNo, issue.issue_id, { description: draft.trim(), status: draftStatus });
+    onChanged(issue.issue_id, { description: draft.trim(), status: draftStatus });
+    setEditing(false);
+    setPendingAction(null);
+  }
+
+  function executeDelete() {
+    deleteIssue(projectNo, issue.issue_id);
+    onDeleted(issue.issue_id);
+    setPendingAction(null);
+  }
+
+  /* Kebab menu handlers — open forms freely, password on save/delete */
   function handleStatusMenuClick() {
     setMenuOpen(false);
     const nextStatus = isResolved ? 'On-going' : 'Resolved';
+    // Status toggle is immediate — require password at this point since no form
     if (isAuthorized()) {
-      doToggleStatus();
+      executeStatusToggle();
     } else {
-      setAuthTitle('Unlock Status Change');
-      setAuthDesc(`Enter authorization password to change status to ${nextStatus}.`);
-      setPendingAction(() => doToggleStatus);
+      setAuthTitle('Authorization Required');
+      setAuthDesc(`Enter password to change status to "${nextStatus}".`);
+      setPendingAction(() => executeStatusToggle);
       setShowAuthModal(true);
     }
-  }
-
-  function doDelete() {
-    if (!window.confirm('Remove this item?')) return;
-    deleteIssue(projectNo, issue.issue_id);
-    onDeleted(issue.issue_id);
   }
 
   function handleDeleteMenuClick() {
     setMenuOpen(false);
+    if (!window.confirm('Remove this item?')) return;
     if (isAuthorized()) {
-      doDelete();
+      executeDelete();
     } else {
-      setAuthTitle('Unlock Item Deletion');
-      setAuthDesc('Enter authorization password to delete this item.');
-      setPendingAction(() => doDelete);
+      setAuthTitle('Authorization Required to Delete');
+      setAuthDesc('Enter password to delete this item.');
+      setPendingAction(() => executeDelete);
       setShowAuthModal(true);
     }
   }
 
-  function doEdit() {
-    setDraft(issue.description || '');
-    setDraftStatus(currentStatus);
-    setEditing(true);
-  }
-
-  function handleEditMenuClick() {
-    setMenuOpen(false);
+  /* Save edit form — password checked here */
+  function handleSaveEdit() {
+    if (!draft.trim()) return;
     if (isAuthorized()) {
-      doEdit();
+      executeSaveEdit();
     } else {
-      setAuthTitle('Unlock Item Editing');
-      setAuthDesc('Enter authorization password to edit this item.');
-      setPendingAction(() => doEdit);
+      setAuthTitle('Authorization Required to Save');
+      setAuthDesc('Enter password to save changes to this item.');
+      setPendingAction(() => executeSaveEdit);
       setShowAuthModal(true);
     }
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
     if (e.key === 'Escape') {
       setDraft(issue.description || '');
       setDraftStatus(currentStatus);
@@ -375,10 +364,9 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
         <span className="section-label" style={{ marginBottom: 0 }}>ITEM #{index + 1}</span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Status Badge */}
           <Badge variant={isResolved ? 'green' : 'amber'}>{currentStatus}</Badge>
 
-          {/* Single Kebab (⋮) Dropdown Menu */}
+          {/* Kebab (⋮) Dropdown */}
           <div className="kebab-wrap" ref={menuRef}>
             <button
               className={`kebab-btn${menuOpen ? ' active' : ''}`}
@@ -390,6 +378,7 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
             {menuOpen && (
               <div className="kebab-dropdown">
+                {/* Status toggle — immediate, password here */}
                 <button className="kebab-item" onClick={handleStatusMenuClick}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -398,7 +387,8 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
                   <span>Change Status</span>
                 </button>
 
-                <button className="kebab-item" onClick={handleEditMenuClick}>
+                {/* Edit opens freely — password only on Save */}
+                <button className="kebab-item" onClick={openEdit}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9"></path>
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
@@ -408,6 +398,7 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
                 <div className="kebab-divider" />
 
+                {/* Delete — password required after confirm */}
                 <button className="kebab-item danger" onClick={handleDeleteMenuClick}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -425,51 +416,39 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
       {editing ? (
         <div style={{ marginTop: 8 }}>
           <textarea
-            autoFocus
-            value={draft}
+            autoFocus value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
-            rows={2}
-            className="form-textarea"
+            rows={2} className="form-textarea"
             placeholder="Describe the issue…"
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <label style={{ fontSize: 11, color: 'var(--navy)', fontWeight: 600 }}>Status:</label>
-              <select
-                className="form-select"
-                value={draftStatus}
-                onChange={e => setDraftStatus(e.target.value)}
-                style={{ padding: '2px 8px', fontSize: 11 }}
-              >
+              <select className="form-select" value={draftStatus} onChange={e => setDraftStatus(e.target.value)}
+                style={{ padding: '2px 8px', fontSize: 11 }}>
                 <option value="On-going">On-going</option>
                 <option value="Resolved">Resolved</option>
               </select>
             </div>
-
             <div style={{ display: 'flex', gap: 6 }}>
               <button className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
-              <button className="btn btn-primary btn-xs" onClick={handleSave} disabled={busy || !draft.trim()}>Save</button>
+              {/* Password required on Save */}
+              <button className="btn btn-primary btn-xs" onClick={handleSaveEdit} disabled={!draft.trim()}>Save</button>
             </div>
           </div>
         </div>
       ) : (
         <div
-          style={{
-            fontSize: 13,
-            color: isResolved ? 'var(--gray)' : 'var(--navy)',
-            textDecoration: isResolved ? 'line-through' : 'none',
-            cursor: 'pointer',
-            lineHeight: 1.5,
-          }}
-          onClick={handleEditMenuClick}
+          style={{ fontSize: 13, color: isResolved ? 'var(--gray)' : 'var(--navy)',
+            textDecoration: isResolved ? 'line-through' : 'none', cursor: 'pointer', lineHeight: 1.5 }}
+          onClick={openEdit}
           title="Click to edit"
         >
           {issue.description || <span className="text-muted">No description — click to add</span>}
         </div>
       )}
 
-      {/* Per-issue Comment Thread */}
       <IssueCommentThread projectNo={projectNo} issueId={issue.issue_id} />
     </div>
   );
@@ -477,16 +456,14 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
 /* ─── Main Panel ──────────────────────────────────────────────── */
 export default function IssuesPanel({ projectNo, issues: initialIssues = [], generalRemarks = null }) {
-  const [issuesList, setIssuesList] = useState(initialIssues);
-  const [remarks, setRemarks]       = useState(generalRemarks || '');
+  const [issuesList, setIssuesList]       = useState(initialIssues);
+  const [remarks, setRemarks]             = useState(generalRemarks || '');
   const [editingRemarks, setEditingRemarks] = useState(false);
-  const [remarksDraft, setRemarksDraft]     = useState(remarks);
+  const [remarksDraft, setRemarksDraft]   = useState(remarks);
+  const [showAddForm, setShowAddForm]     = useState(false);
+  const [newItemText, setNewItemText]     = useState('');
 
-  // Form for adding item
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItemText, setNewItemText] = useState('');
-
-  // Password Modal
+  // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [authTitle, setAuthTitle]         = useState('');
@@ -503,38 +480,49 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
     setIssuesList(prev => prev.filter(item => item.issue_id !== issueId));
   }
 
-  function doAddItem() {
+  function executeAddItem() {
     if (!newItemText.trim()) return;
     const created = addIssue(projectNo, newItemText.trim());
     setIssuesList(prev => [...prev, created]);
     setNewItemText('');
     setShowAddForm(false);
+    setPendingAction(null);
   }
 
-  function handleAddItemClick() {
+  /* Add item form opens freely — password on submit */
+  function handleAddItemSubmit(e) {
+    e.preventDefault();
+    if (!newItemText.trim()) return;
     if (isAuthorized()) {
-      setShowAddForm(true);
+      executeAddItem();
     } else {
-      setAuthTitle('Unlock Add Item');
-      setAuthDesc('Enter authorization password to add new issue item.');
-      setPendingAction(() => () => setShowAddForm(true));
+      setAuthTitle('Authorization Required to Save');
+      setAuthDesc('Enter password to add this item.');
+      setPendingAction(() => executeAddItem);
       setShowAuthModal(true);
     }
   }
 
-  function handleSaveRemarks() {
-    setRemarks(remarksDraft.trim());
-    setEditingRemarks(false);
+  function executeRemarksEdit() {
+    setRemarksDraft(remarks);
+    setEditingRemarks(true);
+    setPendingAction(null);
   }
 
-  function handleEditRemarksClick() {
+  function executeSaveRemarks() {
+    setRemarks(remarksDraft.trim());
+    setEditingRemarks(false);
+    setPendingAction(null);
+  }
+
+  /* Remarks edit opens freely — password on save */
+  function handleSaveRemarks() {
     if (isAuthorized()) {
-      setRemarksDraft(remarks);
-      setEditingRemarks(true);
+      executeSaveRemarks();
     } else {
-      setAuthTitle('Unlock Remarks Editing');
-      setAuthDesc('Enter authorization password to edit general remarks.');
-      setPendingAction(() => () => { setRemarksDraft(remarks); setEditingRemarks(true); });
+      setAuthTitle('Authorization Required to Save');
+      setAuthDesc('Enter password to save general remarks.');
+      setPendingAction(() => executeSaveRemarks);
       setShowAuthModal(true);
     }
   }
@@ -554,7 +542,6 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
         <span className="text-muted text-xs">{issuesList.length} item{issuesList.length === 1 ? '' : 's'}</span>
       </div>
 
-      {/* Item List */}
       {issuesList.length > 0 && (
         <div style={{ marginBottom: 'var(--sp-4)' }}>
           {issuesList.map((issue, idx) => (
@@ -570,40 +557,37 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
         </div>
       )}
 
-      {/* Add Item Form / Button */}
+      {/* Add Item — form opens freely, password on submit */}
       {showAddForm ? (
-        <div style={{ padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-md)', marginBottom: 'var(--sp-4)', border: '1px solid var(--border)' }}>
+        <form onSubmit={handleAddItemSubmit} style={{ padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-md)', marginBottom: 'var(--sp-4)', border: '1px solid var(--border)' }}>
           <label className="form-label" style={{ fontSize: 11 }}>New Issue / Concern Item</label>
-          <textarea
-            autoFocus
-            className="form-textarea"
-            rows={2}
-            value={newItemText}
+          <textarea autoFocus className="form-textarea" rows={2} value={newItemText}
             onChange={e => setNewItemText(e.target.value)}
             placeholder="Describe the issue or concern…"
-            style={{ fontSize: 13, marginBottom: 10 }}
-          />
+            style={{ fontSize: 13, marginBottom: 10 }} />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setShowAddForm(false); setNewItemText(''); }}>Cancel</button>
-            <button className="btn btn-primary btn-sm" onClick={doAddItem} disabled={!newItemText.trim()}>Add Item</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowAddForm(false); setNewItemText(''); }}>
+              Cancel
+            </button>
+            {/* Password required on Add Item */}
+            <button type="submit" className="btn btn-primary btn-sm" disabled={!newItemText.trim()}>
+              Add Item
+            </button>
           </div>
-        </div>
+        </form>
       ) : (
-        <button
-          className="btn-dashed"
-          onClick={handleAddItemClick}
-          style={{ marginBottom: 'var(--sp-5)' }}
-        >
+        <button className="btn-dashed" onClick={() => setShowAddForm(true)} style={{ marginBottom: 'var(--sp-5)' }}>
           + Add Item
         </button>
       )}
 
-      {/* General Remarks Box */}
+      {/* General Remarks — opens freely, password on save */}
       <div style={{ background: '#FBFBF9', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: 'var(--sp-4)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <span className="section-label" style={{ marginBottom: 0 }}>GENERAL REMARKS</span>
           {!editingRemarks && (
-            <button className="btn-outline-pill" onClick={handleEditRemarksClick} style={{ padding: '2px 8px', fontSize: 10 }}>
+            <button className="btn-outline-pill" onClick={() => { setRemarksDraft(remarks); setEditingRemarks(true); }}
+              style={{ padding: '2px 8px', fontSize: 10 }}>
               ✎ Edit
             </button>
           )}
@@ -611,15 +595,11 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
 
         {editingRemarks ? (
           <div>
-            <textarea
-              className="form-textarea"
-              rows={3}
-              value={remarksDraft}
-              onChange={e => setRemarksDraft(e.target.value)}
-              style={{ fontSize: 13, marginBottom: 8 }}
-            />
+            <textarea className="form-textarea" rows={3} value={remarksDraft}
+              onChange={e => setRemarksDraft(e.target.value)} style={{ fontSize: 13, marginBottom: 8 }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
               <button className="btn btn-ghost btn-xs" onClick={() => setEditingRemarks(false)}>Cancel</button>
+              {/* Password required on Save */}
               <button className="btn btn-primary btn-xs" onClick={handleSaveRemarks}>Save Remarks</button>
             </div>
           </div>

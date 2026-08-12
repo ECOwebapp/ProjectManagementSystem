@@ -735,7 +735,25 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-5);
   margin-bottom: var(--sp-5);
+  align-items: stretch;
 }
+
+.detail-grid > .card,
+.detail-grid > * {
+  height: 100%;
+  margin-top: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-grid .card-header {
+  min-height: 44px;
+  align-items: center;
+}
+
+
+
+
 
 @media (max-width: 768px) {
   .detail-grid {
@@ -1085,3 +1103,153 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   margin: 4px 0;
 }
 
+/* ─── Comment Thread Redesign ───────────────────────────────── */
+
+/* Thread header row */
+.discussion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--sp-4);
+}
+
+/* Individual comment card */
+.comment-card {
+  background: #FBFBF9;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+/* Horizontal flex: avatar | content */
+.comment-card-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.comment-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Metadata row: Name · Time · Chip */
+.comment-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.comment-author-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--navy);
+}
+
+.comment-meta-dot {
+  color: var(--gray);
+  font-size: 12px;
+  user-select: none;
+}
+
+.comment-timestamp {
+  font-size: 12px;
+  color: var(--gray);
+}
+
+/* Resolved chip — the ONLY resolved indicator */
+.comment-resolved-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-light);
+  border-radius: 999px;
+  padding: 2px 8px;
+  letter-spacing: 0.01em;
+}
+
+/* Comment body text */
+.comment-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--navy);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+/* Plain text action links row */
+.comment-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.comment-action-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  text-decoration: none;
+  transition: text-decoration 0.1s ease;
+}
+
+.comment-action-link:hover {
+  text-decoration: underline;
+}
+
+.comment-action-link.resolve-link {
+  color: var(--green);
+}
+
+.comment-action-link.resolve-link.resolved {
+  color: var(--gray);
+}
+
+.comment-action-link.resolve-link:hover {
+  text-decoration: underline;
+}
+
+/* Nested replies list */
+.comment-replies-list {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Single reply row */
+.comment-reply-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.comment-reply-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Comment list container */
+.comments-list {
+  margin-bottom: var(--sp-5);
+}
+
+/* Composer card — wraps AddCommentForm */
+.comment-composer-card {
+  background: #FBFBF9;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}

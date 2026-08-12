@@ -16,6 +16,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
   // Header Editing State
   const [editingHeader, setEditingHeader] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingSave, setPendingSave]     = useState(null);
 
   // Form State for Header
   const [projectName, setProjectName] = useState('');
@@ -78,16 +79,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
     setEditingHeader(true);
   };
 
-  const handleEditHeaderClick = () => {
-    if (isAuthorized()) {
-      openHeaderEdit();
-    } else {
-      setShowAuthModal(true);
-    }
-  };
-
-  const handleSaveHeader = (e) => {
-    e.preventDefault();
+  const executeHeaderSave = () => {
     const updatedContractors = contractorsText
       .split(/[,;\n]/)
       .map(s => s.trim())
@@ -113,6 +105,17 @@ export default function ProjectDetail({ projectNo, onBack }) {
     }));
 
     setEditingHeader(false);
+    setPendingSave(null);
+  };
+
+  const handleSaveHeaderSubmit = (e) => {
+    e.preventDefault();
+    if (isAuthorized()) {
+      executeHeaderSave();
+    } else {
+      setPendingSave(() => executeHeaderSave);
+      setShowAuthModal(true);
+    }
   };
 
   const borderLeftColor = project.category === 'On-going' ? 'var(--green)'
@@ -126,10 +129,10 @@ export default function ProjectDetail({ projectNo, onBack }) {
     <div>
       <PasswordModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={openHeaderEdit}
-        title="Unlock Header Editing"
-        description="Enter authorization password to edit project details."
+        onClose={() => { setShowAuthModal(false); setPendingSave(null); }}
+        onSuccess={() => { if (pendingSave) pendingSave(); }}
+        title="Authorization Required to Save"
+        description="Enter authorization password to save project header changes."
       />
 
       {/* Header Info Card */}
@@ -164,7 +167,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
             {!editingHeader && (
               <button
                 className="btn-outline-pill"
-                onClick={handleEditHeaderClick}
+                onClick={openHeaderEdit}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
               >
                 <span>✎</span> Edit Header
@@ -173,7 +176,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
           </div>
 
           {editingHeader && (
-            <form onSubmit={handleSaveHeader} style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-lg)' }}>
+            <form onSubmit={handleSaveHeaderSubmit} style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-lg)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
                 <div>
                   <label className="form-label" style={{ fontSize: 11 }}>Category</label>
@@ -279,7 +282,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm">
-                  Save Header
+                  Save Header Changes
                 </button>
               </div>
             </form>
