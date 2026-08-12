@@ -319,11 +319,29 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 /* ─── Page Header ───────────────────────────────────────────── */
 .page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--sp-5);
+  margin-bottom: 12px;
   gap: var(--sp-4);
   flex-wrap: wrap;
+}
+
+/* Icon badge + title text side-by-side */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-icon-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--gray-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .page-title {
@@ -332,13 +350,14 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-weight: 700;
   color: var(--navy);
   letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .page-subtitle {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--gray);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 /* ─── Buttons ───────────────────────────────────────────────── */
@@ -455,18 +474,19 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .filter-bar {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   margin-bottom: var(--sp-5);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
+/* Light gray pill housing for the tab buttons */
 .tab-group-container {
   display: inline-flex;
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  background: var(--gray-light);
+  border-radius: 10px;
   padding: 4px;
-  gap: 4px;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .tab-btn {
@@ -483,15 +503,19 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
+/* Active tab: white pill with shadow, navy text */
 .tab-btn.active {
-  background: var(--navy);
-  color: #FFFFFF;
+  background: #FFFFFF;
+  color: var(--navy);
+  box-shadow: 0 1px 3px rgba(11, 30, 61, 0.10);
 }
 
+/* Inactive count pill: transparent gray */
 .tab-btn .tab-count {
-  background: var(--gray-light);
+  background: rgba(107, 114, 128, 0.12);
   color: var(--gray);
   border-radius: 999px;
   padding: 1px 7px;
@@ -499,16 +523,17 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-weight: 700;
 }
 
+/* Active count pill: solid blue */
 .tab-btn.active .tab-count {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--blue);
   color: #FFFFFF;
 }
 
+/* Search expands to fill remaining toolbar space */
 .search-input-wrap {
   position: relative;
   flex: 1;
-  min-width: 220px;
-  max-width: 320px;
+  min-width: 160px;
 }
 
 .search-input-wrap .search-icon {
@@ -517,7 +542,6 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   top: 50%;
   transform: translateY(-50%);
   color: var(--gray);
-  font-size: 13px;
   pointer-events: none;
 }
 
@@ -571,6 +595,10 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   background: #FAFAFA;
 }
 
+.project-table tr {
+  height: 100%;
+}
+
 .project-table td {
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
@@ -591,24 +619,27 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   background: #FAFBFF;
 }
 
-/* 3px Left rail on project table row */
+/* 3px Left rail on project table row — full height stretch */
 .project-table .project-row td:first-child {
   border-left: 3px solid transparent;
   transition: border-color 0.12s ease;
+  box-sizing: border-box;
 }
 .project-table .project-row.cat-ongoing td:first-child  { border-left-color: var(--green); }
 .project-table .project-row.cat-proposed td:first-child { border-left-color: var(--orange); }
 .project-table .project-row.cat-completed td:first-child{ border-left-color: var(--gray); }
 
+/* Project title ALWAYS renders in navy (#0B1E3D) */
 .project-name-cell {
   font-family: var(--font-heading);
   font-weight: 600;
   font-size: 14px;
-  color: var(--navy);
+  color: var(--navy) !important;
+  line-height: 1.35;
   transition: color 0.15s ease;
 }
 .project-row:hover .project-name-cell {
-  color: var(--blue);
+  color: var(--blue) !important;
 }
 
 .project-code-text {
@@ -628,6 +659,39 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .progress-column-wrap {
   min-width: 110px;
 }
+
+/* Pending / Empty Data State Labels */
+.text-pending {
+  color: #B0B5BD;
+  font-style: italic;
+  font-size: 12px;
+  font-family: var(--font-body);
+}
+
+.chip-contractor-muted {
+  display: inline-block;
+  background: #F1F1EF;
+  color: #6B7280;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.chip-contractor-internal {
+  display: inline-flex;
+  align-items: center;
+  background: #F1F1EF;
+  color: #4B5563;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  font-style: italic;
+}
+
 
 .progress-track-thin {
   height: 6px;
