@@ -1,4 +1,4 @@
-// AddProjectForm.jsx — Modal form to create local project
+// AddProjectForm.jsx — Modal form to create local project with redesigned layout
 import { useState } from 'react';
 import { addProject } from '../../data/projectsRepo.js';
 
@@ -6,11 +6,10 @@ export default function AddProjectForm({ onClose, onSaved }) {
   const [formData, setFormData] = useState({
     project_name: '',
     project_id_code: '',
-    category: 'On-going',
+    category: 'Proposed', // Default set to Proposed per user specification
     contractor_name: '',
     original_contract_amount: '',
     original_completion_date: '',
-    new_completion_date: '',
     general_remarks: '',
   });
 
@@ -34,7 +33,6 @@ export default function AddProjectForm({ onClose, onSaved }) {
         contractor_names: formData.contractor_name.trim() ? [formData.contractor_name.trim()] : [],
         original_contract_amount: formData.original_contract_amount ? parseFloat(formData.original_contract_amount) : null,
         original_completion_date: formData.original_completion_date || null,
-        new_completion_date: formData.new_completion_date || null,
         general_remarks: formData.general_remarks.trim() || null,
       });
       onSaved();
@@ -47,114 +45,137 @@ export default function AddProjectForm({ onClose, onSaved }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">Add New Project</h2>
-          <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
+      <div className="add-project-modal" onClick={e => e.stopPropagation()}>
+        {/* Sticky Header */}
+        <div className="modal-header-sticky">
+          <div>
+            <h2 className="modal-header-title">Add New Project</h2>
+            <div className="modal-header-subtitle">Fill in the project details below</div>
+          </div>
+          <button className="modal-close-btn" onClick={onClose} title="Close">
+            ✕
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Project Name *</label>
-            <input
-              type="text"
-              name="project_name"
-              className="form-input"
-              required
-              placeholder="e.g. Construction of Solar Farm Phase I"
-              value={formData.project_name}
-              onChange={handleChange}
-            />
+        {/* Scrollable Body Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <div className="modal-body-scroll">
+            {/* Section 1: Basic Info */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <span>BASIC INFO</span>
+                <div className="form-section-line" />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label className="form-label-custom">Project Name *</label>
+                <input
+                  type="text"
+                  name="project_name"
+                  className="form-input-custom"
+                  required
+                  placeholder="e.g. Construction of Solar Farm Phase I"
+                  value={formData.project_name}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-grid-2">
+                <div>
+                  <label className="form-label-custom">Project ID Code</label>
+                  <input
+                    type="text"
+                    name="project_id_code"
+                    className="form-input-custom"
+                    placeholder="e.g. 25CSU06"
+                    value={formData.project_id_code}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div>
+                  <label className="form-label-custom">Category</label>
+                  <select
+                    name="category"
+                    className="form-select-custom"
+                    value={formData.category}
+                    onChange={handleChange}
+                  >
+                    <option value="Proposed">Proposed</option>
+                    <option value="On-going">On-going</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Contract Details */}
+            <div className="form-section" style={{ marginTop: 24 }}>
+              <div className="form-section-header">
+                <span>CONTRACT DETAILS</span>
+                <div className="form-section-line" />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label className="form-label-custom">Awarded Contractor</label>
+                <input
+                  type="text"
+                  name="contractor_name"
+                  className="form-input-custom"
+                  placeholder="e.g. Acme Builders Inc."
+                  value={formData.contractor_name}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-grid-2">
+                <div>
+                  <label className="form-label-custom">Contract Amount (PHP)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="original_contract_amount"
+                    className="form-input-custom"
+                    placeholder="e.g. 15000000"
+                    value={formData.original_contract_amount}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div>
+                  <label className="form-label-custom">Original Completion Date</label>
+                  <input
+                    type="date"
+                    name="original_completion_date"
+                    className="form-input-custom"
+                    value={formData.original_completion_date}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Notes */}
+            <div className="form-section" style={{ marginTop: 24 }}>
+              <div className="form-section-header">
+                <span>NOTES</span>
+                <div className="form-section-line" />
+              </div>
+
+              <div>
+                <label className="form-label-custom">Remarks / Notes</label>
+                <textarea
+                  name="general_remarks"
+                  className="form-textarea-custom"
+                  placeholder="Any initial remarks or scope notes..."
+                  value={formData.general_remarks}
+                  onChange={handleChange}
+                  rows={3}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Project ID Code</label>
-              <input
-                type="text"
-                name="project_id_code"
-                className="form-input"
-                placeholder="e.g. 25CSU06"
-                value={formData.project_id_code}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Category</label>
-              <select
-                name="category"
-                className="form-select"
-                value={formData.category}
-                onChange={handleChange}
-              >
-                <option value="On-going">On-going</option>
-                <option value="Proposed">Proposed</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Awarded Contractor</label>
-              <input
-                type="text"
-                name="contractor_name"
-                className="form-input"
-                placeholder="e.g. Acme Builders Inc."
-                value={formData.contractor_name}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Contract Amount (PHP)</label>
-              <input
-                type="number"
-                step="0.01"
-                name="original_contract_amount"
-                className="form-input"
-                placeholder="e.g. 15000000"
-                value={formData.original_contract_amount}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Original Completion Date</label>
-              <input
-                type="date"
-                name="original_completion_date"
-                className="form-input"
-                value={formData.original_completion_date}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">New Completion Date</label>
-              <input
-                type="date"
-                name="new_completion_date"
-                className="form-input"
-                value={formData.new_completion_date}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Remarks / Notes</label>
-            <textarea
-              name="general_remarks"
-              className="form-textarea"
-              placeholder="Any initial remarks or scope notes..."
-              value={formData.general_remarks}
-              onChange={handleChange}
-              rows={3}
-            />
-          </div>
-
-          <div className="modal-footer">
+          {/* Sticky Footer */}
+          <div className="modal-footer-sticky">
             <button type="button" className="btn btn-ghost" onClick={onClose} disabled={submitting}>
               Cancel
             </button>

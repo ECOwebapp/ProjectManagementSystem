@@ -1253,3 +1253,153 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   border-radius: 12px;
   padding: 16px;
 }
+
+/* ─── Add Project Modal Redesign ──────────────────────────────── */
+.add-project-modal {
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(16, 24, 40, 0.12);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.modal-header-sticky {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.modal-header-title {
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+.modal-header-subtitle {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--gray);
+  margin-top: 2px;
+}
+
+.modal-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #F1F1EF;
+  border: none;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: #E5E7EB;
+  color: var(--navy);
+}
+
+.modal-body-scroll {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer-sticky {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: #FFFFFF;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Form section headers with divider line */
+.form-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.form-section-header span {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--blue);
+  white-space: nowrap;
+}
+
+.form-section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* 2-column grid */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Inputs & Labels */
+.form-label-custom {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 7px;
+}
+
+.form-input-custom,
+.form-select-custom,
+.form-textarea-custom {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--navy);
+  background: #FFFFFF;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input-custom::placeholder,
+.form-textarea-custom::placeholder {
+  color: #9CA3AF;
+}
+
+.form-input-custom:focus,
+.form-select-custom:focus,
+.form-textarea-custom:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(36, 81, 184, 0.12);
+}
+
+.form-textarea-custom {
+  resize: vertical;
+  min-height: 80px;
+}
+
