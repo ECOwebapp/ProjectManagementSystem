@@ -1,5 +1,5 @@
 // IssuesPanel.jsx – Editable Issues, Concerns & Remarks panel
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Badge from '../shared/Badge.jsx';
 import Avatar from '../shared/Avatar.jsx';
 import PasswordModal, { isAuthorized } from '../shared/PasswordModal.jsx';
@@ -253,7 +253,7 @@ function IssueCommentThread({ projectNo, issueId }) {
   );
 }
 
-/* ─── Inline edit row ─────────────────────────────────────────── */
+/* ─── Inline edit row with Kebab Menu ─────────────────────────── */
 function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
   const [editing, setEditing]       = useState(false);
   const [draft, setDraft]           = useState(issue.description || '');
@@ -261,6 +261,10 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     (issue.status === 'Resolved' || issue.status === 'Closed') ? 'Resolved' : 'On-going'
   );
   const [busy, setBusy]             = useState(false);
+
+  // Kebab menu state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   // Auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -270,6 +274,18 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
   const isResolved = (issue.status === 'Resolved' || issue.status === 'Closed');
   const currentStatus = isResolved ? 'Resolved' : 'On-going';
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   function handleSave() {
     if (!draft.trim()) return;
@@ -286,8 +302,8 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     onChanged(issue.issue_id, { status: nextStatus });
   }
 
-  function handleToggleStatus(e) {
-    if (e) e.stopPropagation();
+  function handleStatusMenuClick() {
+    setMenuOpen(false);
     const nextStatus = isResolved ? 'On-going' : 'Resolved';
     if (isAuthorized()) {
       doToggleStatus();
@@ -305,7 +321,8 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     onDeleted(issue.issue_id);
   }
 
-  function handleDelete() {
+  function handleDeleteMenuClick() {
+    setMenuOpen(false);
     if (isAuthorized()) {
       doDelete();
     } else {
@@ -322,7 +339,8 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     setEditing(true);
   }
 
-  function handleEditClick() {
+  function handleEditMenuClick() {
+    setMenuOpen(false);
     if (isAuthorized()) {
       doEdit();
     } else {
@@ -357,40 +375,49 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
         <span className="section-label" style={{ marginBottom: 0 }}>ITEM #{index + 1}</span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Status dot */}
-          <span
-            className={`status-dot ${isResolved ? 'resolved' : 'ongoing'}`}
-            title={`Status: ${currentStatus}`}
-          />
+          {/* Status Badge */}
+          <Badge variant={isResolved ? 'green' : 'amber'}>{currentStatus}</Badge>
 
-          {/* Edit pencil */}
-          {!editing && (
+          {/* Single Kebab (⋮) Dropdown Menu */}
+          <div className="kebab-wrap" ref={menuRef}>
             <button
-              onClick={handleEditClick}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--navy)' }}
-              title="Edit"
+              className={`kebab-btn${menuOpen ? ' active' : ''}`}
+              onClick={() => setMenuOpen(v => !v)}
+              title="Actions"
             >
-              ✎
+              ⋮
             </button>
-          )}
 
-          {/* Delete */}
-          <button
-            onClick={handleDelete}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--red)' }}
-            title="Remove item"
-          >
-            ✕
-          </button>
+            {menuOpen && (
+              <div className="kebab-dropdown">
+                <button className="kebab-item" onClick={handleStatusMenuClick}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span>Change Status</span>
+                </button>
 
-          {/* Clickable Badge */}
-          <span
-            onClick={handleToggleStatus}
-            style={{ cursor: 'pointer' }}
-            title={`Click to change status to ${isResolved ? 'On-going' : 'Resolved'}`}
-          >
-            <Badge variant={isResolved ? 'green' : 'amber'}>{currentStatus}</Badge>
-          </span>
+                <button className="kebab-item" onClick={handleEditMenuClick}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Edit Item</span>
+                </button>
+
+                <div className="kebab-divider" />
+
+                <button className="kebab-item danger" onClick={handleDeleteMenuClick}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -435,7 +462,7 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
             cursor: 'pointer',
             lineHeight: 1.5,
           }}
-          onClick={handleEditClick}
+          onClick={handleEditMenuClick}
           title="Click to edit"
         >
           {issue.description || <span className="text-muted">No description — click to add</span>}

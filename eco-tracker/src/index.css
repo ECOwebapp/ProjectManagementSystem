@@ -1003,3 +1003,85 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   color: var(--red);
   font-size: 13px;
 }
+
+/* ─── Kebab Menu ────────────────────────────────────────────── */
+.kebab-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.kebab-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--gray);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.kebab-btn:hover, .kebab-btn.active {
+  background: var(--gray-light);
+  color: var(--navy);
+}
+
+.kebab-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  width: 170px;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+.kebab-item {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--navy);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.kebab-item:hover {
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
+.kebab-item.danger {
+  color: var(--red);
+}
+
+.kebab-item.danger:hover {
+  background: #FDECEC;
+  color: var(--red);
+}
+
+.kebab-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
