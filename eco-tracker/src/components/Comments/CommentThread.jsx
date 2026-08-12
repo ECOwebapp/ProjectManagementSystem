@@ -46,13 +46,10 @@ export default function CommentThread({ projectNo }) {
   const resolvedCount = topLevel.filter(c => c.is_resolved).length;
 
   return (
-    <div className="comment-section card">
-      <div className="comment-section-header">
+    <div className="card">
+      <div className="card-header">
         <div>
-          <h3 className="card-title">
-            <i className="fas fa-comments mr-2 text-primary" style={{ fontSize: '0.95rem' }}></i>
-            Project Discussion
-          </h3>
+          <h3 className="card-title">Project Discussion</h3>
           <span className="text-muted text-xs">
             {topLevel.length} thread{topLevel.length === 1 ? '' : 's'}
           </span>
@@ -63,18 +60,24 @@ export default function CommentThread({ projectNo }) {
             className="btn btn-ghost btn-xs"
             onClick={() => setShowResolved(!showResolved)}
           >
-            <i className={`fas ${showResolved ? 'fa-eye-slash' : 'fa-eye'} mr-1`}></i>
             {showResolved ? `Hide Resolved (${resolvedCount})` : `Show Resolved (${resolvedCount})`}
           </button>
         )}
       </div>
 
       {visibleTopLevel.length === 0 ? (
-        <div className="empty-state" style={{ padding: 'var(--sp-4)' }}>
+        <div style={{
+          textAlign: 'center',
+          padding: 'var(--sp-6) var(--sp-4)',
+          color: 'var(--gray)',
+          fontSize: 13,
+          borderBottom: '1px solid var(--border)',
+          marginBottom: 'var(--sp-5)',
+        }}>
           No comments yet. Start the conversation below!
         </div>
       ) : (
-        <div className="comments-list">
+        <div className="comments-list" style={{ marginBottom: 'var(--sp-5)', paddingBottom: 'var(--sp-5)', borderBottom: '1px solid var(--border)' }}>
           {visibleTopLevel.map(comment => (
             <CommentItem
               key={comment.comment_id}
@@ -87,8 +90,8 @@ export default function CommentThread({ projectNo }) {
         </div>
       )}
 
-      <div style={{ marginTop: 'var(--sp-6)' }}>
-        <h4 className="section-label">Add to discussion</h4>
+      <div>
+        <div className="section-label" style={{ marginBottom: 'var(--sp-3)' }}>ADD TO DISCUSSION</div>
         <AddCommentForm onSubmit={handleAddTopLevel} placeholder="Share an update or question about this project..." />
       </div>
     </div>

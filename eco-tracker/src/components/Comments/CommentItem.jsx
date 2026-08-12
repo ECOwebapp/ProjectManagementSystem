@@ -58,17 +58,13 @@ export default function CommentItem({ comment, replies = [], onAddReply, onResol
               onClick={() => setShowReplyForm(!showReplyForm)}
               style={{ color: 'var(--c-primary)' }}
             >
-              <i className="fas fa-reply mr-1"></i> Reply
+              Reply
             </button>
             <button
               className={`resolve-btn${isResolved ? ' resolved' : ''}`}
               onClick={handleResolveClick}
             >
-              {isResolved ? (
-                <><i className="fas fa-check-circle mr-1 text-success"></i> Resolved</>
-              ) : (
-                <><i className="fas fa-check mr-1"></i> Mark Resolved</>
-              )}
+              {isResolved ? '✓ Resolved' : 'Mark Resolved'}
             </button>
           </div>
         </div>

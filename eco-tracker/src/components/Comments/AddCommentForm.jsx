@@ -6,7 +6,7 @@ import Avatar from '../shared/Avatar.jsx';
 export default function AddCommentForm({
   onSubmit,
   onCancel = null,
-  placeholder = "Add a comment...",
+  placeholder = "Share an update or question about this project...",
   buttonText = "Comment",
   isReply = false
 }) {
@@ -55,16 +55,21 @@ export default function AddCommentForm({
   };
 
   return (
-    <div className={isReply ? "reply-form-wrap" : "add-comment-form"}>
+    <div style={{ marginTop: isReply ? 8 : 0 }}>
       <form onSubmit={handleSubmit}>
+        {/* Person Selector Row */}
         <div style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center', marginBottom: 'var(--sp-3)' }}>
-          {selectedPerson && <Avatar name={selectedPerson.name} size="sm" />}
+          {selectedPerson ? (
+            <Avatar name={selectedPerson.name} size="sm" />
+          ) : (
+            <div className="avatar avatar-sm" style={{ background: 'var(--gray)' }}>?</div>
+          )}
           <div style={{ flex: 1 }}>
             <select
               className="form-select"
               value={selectedPersonnelId}
               onChange={(e) => setSelectedPersonnelId(e.target.value)}
-              style={{ padding: '4px 8px', fontSize: 'var(--text-sm)' }}
+              style={{ padding: '6px 10px', fontSize: 13, height: 36 }}
             >
               {personnelList.map(p => (
                 <option key={p.personnel_id} value={p.personnel_id}>
@@ -82,17 +87,18 @@ export default function AddCommentForm({
           </button>
         </div>
 
+        {/* Inline Add Person Form */}
         {showAddInline && (
-          <div className="card" style={{ padding: 'var(--sp-3)', marginBottom: 'var(--sp-3)', background: 'var(--c-bg)' }}>
-            <span className="section-label">Add New Personnel</span>
-            <div className="inline-add-person">
+          <div style={{ padding: 'var(--sp-3)', marginBottom: 'var(--sp-3)', background: 'var(--gray-light)', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+            <span className="section-label" style={{ fontSize: 10 }}>ADD NEW PERSONNEL</span>
+            <div style={{ display: 'flex', gap: 'var(--sp-2)', marginTop: 4 }}>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Full Name (e.g. Engr. Jane Doe)"
                 value={newPersonName}
                 onChange={e => setNewPersonName(e.target.value)}
-                style={{ fontSize: 'var(--text-xs)' }}
+                style={{ fontSize: 12 }}
               />
               <input
                 type="text"
@@ -100,7 +106,7 @@ export default function AddCommentForm({
                 placeholder="Title/Role (optional)"
                 value={newPersonTitle}
                 onChange={e => setNewPersonTitle(e.target.value)}
-                style={{ fontSize: 'var(--text-xs)' }}
+                style={{ fontSize: 12 }}
               />
               <button
                 type="button"
@@ -113,16 +119,19 @@ export default function AddCommentForm({
           </div>
         )}
 
-        <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
+        {/* Textarea */}
+        <div style={{ marginBottom: 'var(--sp-3)' }}>
           <textarea
             className="form-textarea"
             placeholder={placeholder}
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={isReply ? 2 : 3}
+            style={{ minHeight: 80, padding: 12, borderRadius: 'var(--r-md)' }}
           />
         </div>
 
+        {/* Right-aligned Submit Button */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
           {onCancel && (
             <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
@@ -133,6 +142,7 @@ export default function AddCommentForm({
             type="submit"
             className="btn btn-primary btn-sm"
             disabled={!text.trim() || !selectedPerson}
+            style={{ boxShadow: '0 1px 2px rgba(36, 81, 184, 0.2)', fontWeight: 600 }}
           >
             {buttonText}
           </button>

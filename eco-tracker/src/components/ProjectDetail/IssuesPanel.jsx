@@ -55,16 +55,15 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
   }
 
   return (
-    <div style={styles.commentForm}>
+    <div style={{ marginTop: 12, padding: 12, background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
       <form onSubmit={handleSubmit}>
-        {/* Person picker row */}
         <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', marginBottom: 'var(--sp-2)' }}>
           {selectedPerson && <Avatar name={selectedPerson.name} size="sm" />}
           <select
             className="form-select"
             value={selectedId}
             onChange={e => setSelectedId(e.target.value)}
-            style={{ flex: 1, padding: '4px 8px', fontSize: 'var(--text-xs)' }}
+            style={{ flex: 1, padding: '4px 8px', fontSize: 11 }}
           >
             {personnel.map(p => (
               <option key={p.personnel_id} value={p.personnel_id}>
@@ -78,11 +77,11 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
         </div>
 
         {addingPerson && (
-          <div style={styles.addPersonMini}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
             <input className="form-input" placeholder="Full Name" value={newName}
-              onChange={e => setNewName(e.target.value)} style={{ fontSize: 'var(--text-xs)' }} />
+              onChange={e => setNewName(e.target.value)} style={{ fontSize: 11 }} />
             <input className="form-input" placeholder="Title (optional)" value={newTitle}
-              onChange={e => setNewTitle(e.target.value)} style={{ fontSize: 'var(--text-xs)' }} />
+              onChange={e => setNewTitle(e.target.value)} style={{ fontSize: 11 }} />
             <button type="button" className="btn btn-primary btn-xs" onClick={handleAddPerson}>Save</button>
           </div>
         )}
@@ -93,7 +92,7 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder={isReply ? 'Write a reply…' : 'Add a comment on this item…'}
-          style={{ fontSize: 'var(--text-xs)', marginBottom: 'var(--sp-2)' }}
+          style={{ fontSize: 12, marginBottom: 'var(--sp-2)' }}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
           {onCancel && (
@@ -134,7 +133,7 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
   }
 
   return (
-    <div style={styles.commentItem}>
+    <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
       <PasswordModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -143,38 +142,36 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
         description="Enter authorization password to resolve/unresolve comment."
       />
 
-      <Avatar name={comment.commenter_name} />
+      <Avatar name={comment.commenter_name} size="sm" />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...styles.commentBubble, opacity: isResolved ? 0.55 : 1 }}>
-          <div style={styles.commentMeta}>
-            <span style={styles.commentAuthor}>{comment.commenter_name}</span>
-            <span style={styles.commentTime}>{formatTs(comment.commented_at)}</span>
+        <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '0 8px 8px 8px', padding: '8px 12px', opacity: isResolved ? 0.6 : 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--navy)' }}>{comment.commenter_name}</span>
+            <span style={{ fontSize: 10, color: 'var(--gray)' }}>{formatTs(comment.commented_at)}</span>
             {isResolved && (
               <span className="badge badge-gray" style={{ marginLeft: 'auto', fontSize: 10 }}>Resolved</span>
             )}
           </div>
-          <div style={styles.commentText}>{comment.comment_text}</div>
-          <div style={styles.commentActions}>
-            <button onClick={() => setShowReply(v => !v)} style={{ ...styles.actionLink, color: 'var(--c-primary)' }}>Reply</button>
-            <button onClick={handleResolveClick} style={{ ...styles.actionLink, color: isResolved ? 'var(--c-green)' : 'var(--c-text-3)' }}>
+          <div style={{ fontSize: 12, color: 'var(--navy)', lineHeight: 1.5 }}>{comment.comment_text}</div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+            <button onClick={() => setShowReply(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--blue)' }}>Reply</button>
+            <button onClick={handleResolveClick} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: isResolved ? 'var(--green)' : 'var(--gray)' }}>
               {isResolved ? '✓ Resolved' : 'Mark Resolved'}
             </button>
           </div>
         </div>
 
         {replies.length > 0 && (
-          <div style={styles.repliesList}>
+          <div style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid var(--border)' }}>
             {replies.map(rep => (
-              <div key={rep.comment_id} style={styles.commentItem}>
+              <div key={rep.comment_id} style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                 <Avatar name={rep.commenter_name} size="sm" />
-                <div style={{ flex: 1 }}>
-                  <div style={styles.commentBubble}>
-                    <div style={styles.commentMeta}>
-                      <span style={styles.commentAuthor}>{rep.commenter_name}</span>
-                      <span style={styles.commentTime}>{formatTs(rep.commented_at)}</span>
-                    </div>
-                    <div style={styles.commentText}>{rep.comment_text}</div>
+                <div style={{ flex: 1, background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '0 8px 8px 8px', padding: '6px 10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <span style={{ fontWeight: 700, fontSize: 11, color: 'var(--navy)' }}>{rep.commenter_name}</span>
+                    <span style={{ fontSize: 10, color: 'var(--gray)' }}>{formatTs(rep.commented_at)}</span>
                   </div>
+                  <div style={{ fontSize: 11, color: 'var(--navy)' }}>{rep.comment_text}</div>
                 </div>
               </div>
             ))}
@@ -215,25 +212,22 @@ function IssueCommentThread({ projectNo, issueId }) {
     }
   });
 
-  function handleAddComment({ personnelId, commenterName, text }) {
-    addComment({ projectNo, personnelId, commenterName, text, targetField: issueId });
-    reload();
-  }
-
   const count = topLevel.length;
 
   return (
-    <div style={styles.threadWrap}>
-      <button onClick={() => setOpen(v => !v)} style={styles.commentToggle}>
-        <span style={{ fontSize: 13 }}>💬</span>
+    <div style={{ marginTop: 8 }}>
+      <button onClick={() => setOpen(v => !v)} className="comment-link-action">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
         <span>{count > 0 ? `Comments (${count})` : 'Add Comment'}</span>
-        <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 10 }}>{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div style={styles.threadBody}>
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border)' }}>
           {topLevel.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
               {topLevel.map(c => (
                 <IssueCommentItem
                   key={c.comment_id}
@@ -245,11 +239,14 @@ function IssueCommentThread({ projectNo, issueId }) {
               ))}
             </div>
           ) : (
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--c-text-3)', marginBottom: 'var(--sp-2)' }}>
+            <p className="text-xs text-muted" style={{ marginBottom: 8 }}>
               No comments yet. Be the first to comment.
             </p>
           )}
-          <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={handleAddComment} />
+          <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={({ personnelId, commenterName, text }) => {
+            addComment({ projectNo, personnelId, commenterName, text, targetField: issueId });
+            reload();
+          }} />
         </div>
       )}
     </div>
@@ -346,7 +343,7 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
   }
 
   return (
-    <div style={styles.row}>
+    <div className="issue-card-item">
       <PasswordModal
         isOpen={showAuthModal}
         onClose={() => { setShowAuthModal(false); setPendingAction(null); }}
@@ -356,31 +353,36 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
       />
 
       {/* Header row */}
-      <div style={styles.rowHeader}>
-        <span style={styles.itemLabel}>Item #{index + 1}</span>
-        <div style={styles.rowActions}>
-          {/* Quick status toggle icon */}
-          <button
-            onClick={handleToggleStatus}
-            title={isResolved ? 'Reopen as On-going' : 'Mark as Resolved'}
-            style={{ ...styles.iconBtn, color: isResolved ? 'var(--c-green)' : 'var(--c-amber)' }}
-          >
-            <i className={`fas ${isResolved ? 'fa-check-circle' : 'fa-circle'}`}></i>
-          </button>
+      <div className="issue-card-header">
+        <span className="section-label" style={{ marginBottom: 0 }}>ITEM #{index + 1}</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Status dot */}
+          <span
+            className={`status-dot ${isResolved ? 'resolved' : 'ongoing'}`}
+            title={`Status: ${currentStatus}`}
+          />
+
           {/* Edit pencil */}
           {!editing && (
             <button
               onClick={handleEditClick}
-              style={styles.iconBtn}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--navy)' }}
               title="Edit"
             >
-              <i className="fas fa-edit"></i>
+              ✎
             </button>
           )}
+
           {/* Delete */}
-          <button onClick={handleDelete} style={{ ...styles.iconBtn, color: 'var(--c-red)' }} title="Remove item">
-            <i className="fas fa-trash-alt"></i>
+          <button
+            onClick={handleDelete}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--red)' }}
+            title="Remove item"
+          >
+            ✕
           </button>
+
           {/* Clickable Badge */}
           <span
             onClick={handleToggleStatus}
@@ -394,411 +396,212 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
       {/* Body */}
       {editing ? (
-        <div style={{ marginTop: 6 }}>
+        <div style={{ marginTop: 8 }}>
           <textarea
             autoFocus
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={2}
-            style={styles.textarea}
+            className="form-textarea"
             placeholder="Describe the issue…"
           />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--sp-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <label style={{ fontSize: 'var(--text-xs)', color: 'var(--c-text-2)', fontWeight: 600 }}>Status:</label>
+              <label style={{ fontSize: 11, color: 'var(--navy)', fontWeight: 600 }}>Status:</label>
               <select
                 className="form-select"
                 value={draftStatus}
                 onChange={e => setDraftStatus(e.target.value)}
-                style={{ padding: '2px 8px', fontSize: 'var(--text-xs)' }}
+                style={{ padding: '2px 8px', fontSize: 11 }}
               >
                 <option value="On-going">On-going</option>
                 <option value="Resolved">Resolved</option>
               </select>
             </div>
 
-            <div style={styles.editButtons}>
-              <button onClick={handleSave} disabled={busy || !draft.trim()} style={styles.saveBtn}>Save</button>
-              <button
-                onClick={() => {
-                  setDraft(issue.description || '');
-                  setDraftStatus(currentStatus);
-                  setEditing(false);
-                }}
-                style={styles.cancelBtn}
-              >
-                Cancel
-              </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="btn btn-primary btn-xs" onClick={handleSave} disabled={busy || !draft.trim()}>Save</button>
             </div>
           </div>
         </div>
       ) : (
         <div
           style={{
-            ...styles.description,
+            fontSize: 13,
+            color: isResolved ? 'var(--gray)' : 'var(--navy)',
             textDecoration: isResolved ? 'line-through' : 'none',
-            color: isResolved ? 'var(--c-text-3)' : 'var(--c-text)',
+            cursor: 'pointer',
+            lineHeight: 1.5,
           }}
-          onClick={() => {
-            setDraft(issue.description || '');
-            setDraftStatus(currentStatus);
-            setEditing(true);
-          }}
+          onClick={handleEditClick}
           title="Click to edit"
         >
-          {issue.description || <span style={{ color: 'var(--c-text-3)' }}>No description — click to add</span>}
+          {issue.description || <span className="text-muted">No description — click to add</span>}
         </div>
       )}
 
-      {/* Per-issue comment thread */}
+      {/* Per-issue Comment Thread */}
       <IssueCommentThread projectNo={projectNo} issueId={issue.issue_id} />
     </div>
   );
 }
 
-/* ─── Add-new form ────────────────────────────────────────────── */
-function AddIssueForm({ projectNo, onAdded }) {
-  const [text, setText]         = useState('');
-  const [status, setStatus]     = useState('On-going');
-  const [visible, setVisible]   = useState(false);
-
-  function handleAdd() {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const newIssue = addIssue(projectNo, trimmed, status);
-    onAdded(newIssue);
-    setText('');
-    setStatus('On-going');
-    setVisible(false);
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd(); }
-    if (e.key === 'Escape') { setText(''); setVisible(false); }
-  }
-
-  if (!visible) {
-    return (
-      <button onClick={() => setVisible(true)} style={styles.addBtn}>
-        <i className="fas fa-plus mr-1"></i> Add Item
-      </button>
-    );
-  }
-
-  return (
-    <div style={styles.addForm}>
-      <textarea
-        autoFocus
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-        rows={2}
-        style={styles.textarea}
-        placeholder="Describe the concern, issue, or remark… (Enter to save, Esc to cancel)"
-      />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--sp-2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 'var(--text-xs)', color: 'var(--c-text-2)', fontWeight: 600 }}>Status:</label>
-          <select
-            className="form-select"
-            value={status}
-            onChange={e => setStatus(e.target.value)}
-            style={{ padding: '2px 8px', fontSize: 'var(--text-xs)' }}
-          >
-            <option value="On-going">On-going</option>
-            <option value="Resolved">Resolved</option>
-          </select>
-        </div>
-
-        <div style={styles.editButtons}>
-          <button onClick={handleAdd} disabled={!text.trim()} style={styles.saveBtn}>Add</button>
-          <button onClick={() => { setText(''); setVisible(false); }} style={styles.cancelBtn}>Cancel</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Main panel ──────────────────────────────────────────────── */
+/* ─── Main Panel ──────────────────────────────────────────────── */
 export default function IssuesPanel({ projectNo, issues: initialIssues = [], generalRemarks = null }) {
-  const [issues, setIssues] = useState(initialIssues);
+  const [issuesList, setIssuesList] = useState(initialIssues);
+  const [remarks, setRemarks]       = useState(generalRemarks || '');
+  const [editingRemarks, setEditingRemarks] = useState(false);
+  const [remarksDraft, setRemarksDraft]     = useState(remarks);
 
-  function handleChanged(issueId, patch) {
-    setIssues(prev => prev.map(iss => iss.issue_id === issueId ? { ...iss, ...patch } : iss));
+  // Form for adding item
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItemText, setNewItemText] = useState('');
+
+  // Password Modal
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [authTitle, setAuthTitle]         = useState('');
+  const [authDesc, setAuthDesc]           = useState('');
+
+  useEffect(() => { setIssuesList(initialIssues); }, [initialIssues]);
+  useEffect(() => { setRemarks(generalRemarks || ''); }, [generalRemarks]);
+
+  function handleItemChanged(issueId, patch) {
+    setIssuesList(prev => prev.map(item => item.issue_id === issueId ? { ...item, ...patch } : item));
   }
 
-  function handleDeleted(issueId) {
-    setIssues(prev => prev.filter(iss => iss.issue_id !== issueId));
+  function handleItemDeleted(issueId) {
+    setIssuesList(prev => prev.filter(item => item.issue_id !== issueId));
   }
 
-  function handleAdded(newIssue) {
-    setIssues(prev => [...prev, newIssue]);
+  function doAddItem() {
+    if (!newItemText.trim()) return;
+    const created = addIssue(projectNo, newItemText.trim());
+    setIssuesList(prev => [...prev, created]);
+    setNewItemText('');
+    setShowAddForm(false);
+  }
+
+  function handleAddItemClick() {
+    if (isAuthorized()) {
+      setShowAddForm(true);
+    } else {
+      setAuthTitle('Unlock Add Item');
+      setAuthDesc('Enter authorization password to add new issue item.');
+      setPendingAction(() => () => setShowAddForm(true));
+      setShowAuthModal(true);
+    }
+  }
+
+  function handleSaveRemarks() {
+    setRemarks(remarksDraft.trim());
+    setEditingRemarks(false);
+  }
+
+  function handleEditRemarksClick() {
+    if (isAuthorized()) {
+      setRemarksDraft(remarks);
+      setEditingRemarks(true);
+    } else {
+      setAuthTitle('Unlock Remarks Editing');
+      setAuthDesc('Enter authorization password to edit general remarks.');
+      setPendingAction(() => () => { setRemarksDraft(remarks); setEditingRemarks(true); });
+      setShowAuthModal(true);
+    }
   }
 
   return (
-    <div className="card" style={{ marginBottom: 'var(--sp-4)' }}>
-      <div className="card-header" style={styles.header}>
-        <h3 className="card-title">
-          <i className="fas fa-exclamation-circle mr-2 text-warning" style={{ fontSize: '0.95rem' }}></i>
-          Issues, Concerns &amp; Remarks
-        </h3>
-        <span style={styles.countPill}>{issues.length} item{issues.length !== 1 ? 's' : ''}</span>
+    <div className="card">
+      <PasswordModal
+        isOpen={showAuthModal}
+        onClose={() => { setShowAuthModal(false); setPendingAction(null); }}
+        onSuccess={() => { if (pendingAction) pendingAction(); }}
+        title={authTitle}
+        description={authDesc}
+      />
+
+      <div className="card-header">
+        <h3 className="card-title">Issues, Concerns & Remarks</h3>
+        <span className="text-muted text-xs">{issuesList.length} item{issuesList.length === 1 ? '' : 's'}</span>
       </div>
 
-      <div style={{ padding: '0 var(--sp-4) var(--sp-4)' }}>
-        {issues.length === 0 && (
-          <div className="empty-state" style={{ marginBottom: 'var(--sp-3)' }}>
-            No active issues or remarks — add one below.
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-          {issues.map((iss, i) => (
+      {/* Item List */}
+      {issuesList.length > 0 && (
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
+          {issuesList.map((issue, idx) => (
             <IssueRow
-              key={iss.issue_id || i}
-              issue={iss}
-              index={i}
+              key={issue.issue_id}
+              issue={issue}
+              index={idx}
               projectNo={projectNo}
-              onChanged={handleChanged}
-              onDeleted={handleDeleted}
+              onChanged={handleItemChanged}
+              onDeleted={handleItemDeleted}
             />
           ))}
         </div>
+      )}
 
-        {generalRemarks && (
-          <div style={styles.remarksBox}>
-            <span className="section-label">General Remarks</span>
-            <div className="text-sm mt-2">{generalRemarks}</div>
+      {/* Add Item Form / Button */}
+      {showAddForm ? (
+        <div style={{ padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-md)', marginBottom: 'var(--sp-4)', border: '1px solid var(--border)' }}>
+          <label className="form-label" style={{ fontSize: 11 }}>New Issue / Concern Item</label>
+          <textarea
+            autoFocus
+            className="form-textarea"
+            rows={2}
+            value={newItemText}
+            onChange={e => setNewItemText(e.target.value)}
+            placeholder="Describe the issue or concern…"
+            style={{ fontSize: 13, marginBottom: 10 }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowAddForm(false); setNewItemText(''); }}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={doAddItem} disabled={!newItemText.trim()}>Add Item</button>
           </div>
-        )}
-
-        <div style={{ marginTop: 'var(--sp-4)' }}>
-          <AddIssueForm projectNo={projectNo} onAdded={handleAdded} />
         </div>
+      ) : (
+        <button
+          className="btn-dashed"
+          onClick={handleAddItemClick}
+          style={{ marginBottom: 'var(--sp-5)' }}
+        >
+          + Add Item
+        </button>
+      )}
+
+      {/* General Remarks Box */}
+      <div style={{ background: '#FBFBF9', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: 'var(--sp-4)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <span className="section-label" style={{ marginBottom: 0 }}>GENERAL REMARKS</span>
+          {!editingRemarks && (
+            <button className="btn-outline-pill" onClick={handleEditRemarksClick} style={{ padding: '2px 8px', fontSize: 10 }}>
+              ✎ Edit
+            </button>
+          )}
+        </div>
+
+        {editingRemarks ? (
+          <div>
+            <textarea
+              className="form-textarea"
+              rows={3}
+              value={remarksDraft}
+              onChange={e => setRemarksDraft(e.target.value)}
+              style={{ fontSize: 13, marginBottom: 8 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+              <button className="btn btn-ghost btn-xs" onClick={() => setEditingRemarks(false)}>Cancel</button>
+              <button className="btn btn-primary btn-xs" onClick={handleSaveRemarks}>Save Remarks</button>
+            </div>
+          </div>
+        ) : (
+          <p style={{ fontSize: 13, color: remarks ? 'var(--navy)' : 'var(--gray)', lineHeight: 1.6 }}>
+            {remarks || 'No general remarks entered.'}
+          </p>
+        )}
       </div>
     </div>
   );
 }
-
-/* ─── Inline styles ───────────────────────────────────────────── */
-const styles = {
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  countPill: {
-    fontSize: 'var(--text-xs)',
-    fontWeight: 600,
-    background: 'var(--c-gray-bg)',
-    color: 'var(--c-text-3)',
-    padding: '2px 8px',
-    borderRadius: 20,
-  },
-  row: {
-    background: 'var(--c-gray-bg)',
-    border: '1px solid var(--c-border)',
-    borderRadius: 'var(--r-md)',
-    padding: 'var(--sp-3)',
-    transition: 'box-shadow .15s',
-  },
-  rowHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  itemLabel: {
-    fontSize: 'var(--text-xs)',
-    fontWeight: 600,
-    color: 'var(--c-text-3)',
-    textTransform: 'uppercase',
-    letterSpacing: '.04em',
-  },
-  rowActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--sp-2)',
-  },
-  iconBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 14,
-    color: 'var(--c-text-3)',
-    padding: '2px 4px',
-    borderRadius: 4,
-    lineHeight: 1,
-    transition: 'color .15s',
-  },
-  description: {
-    fontSize: 'var(--text-sm)',
-    lineHeight: 1.5,
-    cursor: 'pointer',
-    borderRadius: 4,
-    padding: '2px 0',
-    minHeight: 22,
-  },
-  textarea: {
-    width: '100%',
-    border: '1px solid var(--c-primary)',
-    borderRadius: 'var(--r-sm)',
-    padding: 'var(--sp-2)',
-    fontSize: 'var(--text-sm)',
-    fontFamily: 'var(--font)',
-    color: 'var(--c-text)',
-    background: 'var(--c-surface)',
-    resize: 'vertical',
-    outline: 'none',
-    boxShadow: '0 0 0 3px var(--c-primary-bg)',
-  },
-  editButtons: {
-    display: 'flex',
-    gap: 'var(--sp-2)',
-    marginTop: 'var(--sp-2)',
-  },
-  saveBtn: {
-    background: 'var(--c-primary)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 'var(--r-sm)',
-    padding: '4px 14px',
-    fontSize: 'var(--text-sm)',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  cancelBtn: {
-    background: 'var(--c-gray-bg)',
-    color: 'var(--c-text-2)',
-    border: '1px solid var(--c-border)',
-    borderRadius: 'var(--r-sm)',
-    padding: '4px 12px',
-    fontSize: 'var(--text-sm)',
-    cursor: 'pointer',
-  },
-  addBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    background: 'none',
-    border: '1.5px dashed var(--c-border-md)',
-    borderRadius: 'var(--r-md)',
-    width: '100%',
-    padding: 'var(--sp-3)',
-    color: 'var(--c-primary)',
-    fontSize: 'var(--text-sm)',
-    fontWeight: 600,
-    cursor: 'pointer',
-    justifyContent: 'center',
-    transition: 'border-color .15s, background .15s',
-  },
-  addForm: {
-    background: 'var(--c-gray-bg)',
-    border: '1px solid var(--c-border)',
-    borderRadius: 'var(--r-md)',
-    padding: 'var(--sp-3)',
-  },
-  remarksBox: {
-    marginTop: 'var(--sp-4)',
-    padding: 'var(--sp-3)',
-    background: 'var(--c-gray-bg)',
-    borderRadius: 'var(--r-sm)',
-  },
-  // ── Comment thread ──
-  threadWrap: {
-    marginTop: 'var(--sp-3)',
-    borderTop: '1px solid var(--c-border)',
-    paddingTop: 'var(--sp-2)',
-  },
-  commentToggle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--sp-2)',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 'var(--text-xs)',
-    color: 'var(--c-primary)',
-    fontWeight: 600,
-    padding: '2px 0',
-    width: '100%',
-    textAlign: 'left',
-  },
-  threadBody: {
-    marginTop: 'var(--sp-2)',
-    padding: 'var(--sp-3)',
-    background: 'var(--c-surface)',
-    borderRadius: 'var(--r-sm)',
-    border: '1px solid var(--c-border)',
-  },
-  commentItem: {
-    display: 'flex',
-    gap: 'var(--sp-2)',
-    alignItems: 'flex-start',
-  },
-  commentBubble: {
-    background: 'var(--c-gray-bg)',
-    borderRadius: 'var(--r-md)',
-    padding: 'var(--sp-2) var(--sp-3)',
-    flex: 1,
-  },
-  commentMeta: {
-    display: 'flex',
-    gap: 'var(--sp-2)',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  commentAuthor: {
-    fontWeight: 600,
-    fontSize: 'var(--text-xs)',
-    color: 'var(--c-text)',
-  },
-  commentTime: {
-    fontSize: 'var(--text-xs)',
-    color: 'var(--c-text-3)',
-  },
-  commentText: {
-    fontSize: 'var(--text-xs)',
-    color: 'var(--c-text)',
-    lineHeight: 1.5,
-    whiteSpace: 'pre-wrap',
-  },
-  commentActions: {
-    display: 'flex',
-    gap: 'var(--sp-3)',
-    marginTop: 'var(--sp-1)',
-  },
-  actionLink: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 'var(--text-xs)',
-    fontWeight: 600,
-    padding: 0,
-  },
-  repliesList: {
-    marginTop: 'var(--sp-2)',
-    marginLeft: 'var(--sp-4)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--sp-2)',
-  },
-  commentForm: {
-    marginTop: 'var(--sp-2)',
-    background: 'var(--c-bg)',
-    borderRadius: 'var(--r-sm)',
-    padding: 'var(--sp-2)',
-    border: '1px solid var(--c-border)',
-  },
-  addPersonMini: {
-    display: 'flex',
-    gap: 'var(--sp-2)',
-    alignItems: 'center',
-    marginBottom: 'var(--sp-2)',
-    padding: 'var(--sp-2)',
-    background: 'var(--c-surface)',
-    borderRadius: 'var(--r-sm)',
-    border: '1px solid var(--c-border)',
-  },
-};

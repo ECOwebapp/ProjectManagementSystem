@@ -12,10 +12,10 @@ function formatDateForDisplay(dateStr) {
   return dateStr;
 }
 
-/* ─── Circular SVG Donut ──────────────────────────────────────── */
-function DonutChart({ actual = 0, target = 0 }) {
-  const size   = 110;
-  const stroke = 11;
+/* ─── Circular SVG Gauge ──────────────────────────────────────── */
+function CircularGauge({ actual = 0, isBehind = false }) {
+  const size   = 120;
+  const stroke = 10;
   const r      = (size - stroke) / 2;
   const circ   = 2 * Math.PI * r;
   const cx     = size / 2;
@@ -23,58 +23,39 @@ function DonutChart({ actual = 0, target = 0 }) {
 
   const clamp = (v) => Math.min(100, Math.max(0, v));
   const actualPct = clamp(actual);
-  const targetPct = clamp(target);
-
   const dashActual = (actualPct / 100) * circ;
-  const dashTarget = (targetPct / 100) * circ;
 
-  const isAhead  = actual >= target;
-  const color    = isAhead ? 'var(--c-green)' : 'var(--c-red)';
+  const gaugeColor = isBehind ? 'var(--red)' : 'var(--green)';
 
   return (
-    <svg
-      width={size}
-      height={size}
-      className="progress-donut-svg"
-      viewBox={`0 0 ${size} ${size}`}
-    >
-      {/* Track */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke="var(--c-border)"
-        strokeWidth={stroke}
-      />
-      {/* Target ring (lighter) */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke="#cbd5e1"
-        strokeWidth={stroke - 3}
-        strokeDasharray={`${dashTarget} ${circ - dashTarget}`}
-        strokeDashoffset={circ / 4}
-        strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray .5s cubic-bezier(.4,0,.2,1)' }}
-      />
-      {/* Actual fill */}
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeDasharray={`${dashActual} ${circ - dashActual}`}
-        strokeDashoffset={circ / 4}
-        strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray .5s cubic-bezier(.4,0,.2,1)', filter: `drop-shadow(0 0 4px ${color}55)` }}
-      />
-      {/* Center text */}
-      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="800" fill={color} fontFamily="Inter,sans-serif">
-        {actualPct.toFixed(0)}%
-      </text>
-      <text x={cx} y={cy + 11} textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--c-text-3)" fontFamily="Inter,sans-serif" letterSpacing=".04em">
-        ACTUAL
-      </text>
-    </svg>
+    <div className="gauge-svg-wrap">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Track */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke="var(--border)"
+          strokeWidth={stroke}
+        />
+        {/* Fill Arc */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke={gaugeColor}
+          strokeWidth={stroke}
+          strokeDasharray={`${dashActual} ${circ - dashActual}`}
+          strokeDashoffset={circ / 4}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dasharray 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+        />
+      </svg>
+      <div className="gauge-center-text">
+        <div className="gauge-val" style={{ color: gaugeColor }}>
+          {actualPct.toFixed(0)}%
+        </div>
+        <div className="gauge-lbl">ACTUAL</div>
+      </div>
+    </div>
   );
 }
 
@@ -139,8 +120,7 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
     (actual_percent != null && target_percent != null ? actual_percent - target_percent : null);
   const as_of_date        = latest.as_of_date ?? null;
 
-  const slipClass  = (slippage_percent ?? 0) >= 0 ? 'slippage-positive' : 'slippage-negative';
-  const barClass   = (slippage_percent ?? 0) >= 0 ? 'on-track' : 'behind';
+  const isBehind   = (slippage_percent ?? 0) < 0;
   const actualPct  = Math.min(100, Math.max(0, actual_percent ?? 0));
   const targetPct  = Math.min(100, Math.max(0, target_percent ?? 0));
 
@@ -160,84 +140,72 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
 
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--sp-3)' }}>
-          <h3 className="card-title">
-            <i className="fas fa-chart-line mr-2 text-success" style={{ fontSize: '0.95rem' }}></i>
-            Progress &amp; Milestones
-          </h3>
+          <h3 className="card-title">Progress & Milestones</h3>
           {as_of_date && (
-            <span className="text-muted text-xs" style={{ fontWeight: 500 }}>As of {as_of_date}</span>
+            <span className="text-muted text-xs">As of {as_of_date}</span>
           )}
         </div>
         {!editing && (
           <button
-            className="btn btn-ghost btn-xs"
+            className="btn-outline-pill"
             onClick={handleEditClick}
-            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
-            <i className="fas fa-edit mr-1"></i> Edit
+            <span>✎</span> Edit
           </button>
         )}
       </div>
 
       {/* Edit Form */}
       {editing && (
-        <div style={{ padding: 'var(--sp-4)', background: 'var(--c-gray-bg)', borderRadius: 'var(--r-md)', marginBottom: 'var(--sp-4)', border: '1px solid var(--c-border)' }}>
-          <div style={{ fontWeight: 700, marginBottom: 'var(--sp-3)', fontSize: 'var(--text-sm)', color: 'var(--c-text)' }}>
+        <div style={{ padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-md)', marginBottom: 'var(--sp-4)', border: '1px solid var(--border)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 'var(--sp-3)', fontSize: 13, color: 'var(--navy)' }}>
             Update Progress
           </div>
           <form onSubmit={handleSave}>
             {error && (
-              <div style={{ color: 'var(--c-red)', fontSize: 'var(--text-xs)', marginBottom: 'var(--sp-2)', fontWeight: 500 }}>
+              <div style={{ color: 'var(--red)', fontSize: 11, marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
                 {error}
               </div>
             )}
             <div style={{ marginBottom: 'var(--sp-3)' }}>
-              <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                As of Date
-              </label>
+              <label className="form-label" style={{ fontSize: 11 }}>As of Date</label>
               <input
                 type="text"
                 className="form-input"
                 placeholder="e.g. May 31, 2026"
                 value={asOfInput}
                 onChange={e => setAsOfInput(e.target.value)}
-                style={{ width: '100%', fontSize: 'var(--text-sm)' }}
               />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
               <div>
-                <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                  Actual Progress (%)
-                </label>
+                <label className="form-label" style={{ fontSize: 11 }}>Actual Progress (%)</label>
                 <input
                   type="number" step="0.001" min="0" max="100"
                   placeholder="e.g. 43.360"
                   className="form-input"
                   value={actualInput}
                   onChange={e => setActualInput(e.target.value)}
-                  style={{ width: '100%', fontSize: 'var(--text-sm)' }}
                   required
                 />
               </div>
               <div>
-                <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                  Target Progress (%)
-                </label>
+                <label className="form-label" style={{ fontSize: 11 }}>Target Progress (%)</label>
                 <input
                   type="number" step="0.001" min="0" max="100"
                   placeholder="e.g. 100.000"
                   className="form-input"
                   value={targetInput}
                   onChange={e => setTargetInput(e.target.value)}
-                  style={{ width: '100%', fontSize: 'var(--text-sm)' }}
                   required
                 />
               </div>
             </div>
             {liveSlippage !== null && (
-              <div style={{ marginBottom: 'var(--sp-3)', fontSize: 'var(--text-xs)', fontWeight: 700 }}>
+              <div style={{ marginBottom: 'var(--sp-3)', fontSize: 11, fontWeight: 700 }}>
                 Calculated Slippage:{' '}
-                <span className={liveSlippage >= 0 ? 'slippage-positive' : 'slippage-negative'}>
+                <span style={{ color: liveSlippage >= 0 ? 'var(--green)' : 'var(--red)' }}>
                   {liveSlippage > 0 ? '+' : ''}{liveSlippage.toFixed(3)}%
                 </span>
               </div>
@@ -259,55 +227,53 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
         <div className="empty-state">No progress data available.</div>
       ) : (
         <>
-          {/* Donut + stats */}
-          <div className="progress-donut-wrap">
-            <DonutChart actual={actualPct} target={targetPct} />
+          <div className="gauge-container">
+            <CircularGauge actual={actualPct} isBehind={isBehind} />
 
-            <div className="progress-donut-stats">
-              {/* Slippage banner */}
+            <div style={{ flex: 1 }}>
+              {/* Slippage Banner */}
               {slippage_percent !== null && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 10px',
-                  borderRadius: 'var(--r-sm)',
-                  background: (slippage_percent >= 0) ? 'var(--c-green-bg)' : 'var(--c-red-bg)',
-                  border: `1px solid ${(slippage_percent >= 0) ? 'rgba(5,150,105,.15)' : 'rgba(220,38,38,.15)'}`,
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 700,
-                }}>
-                  <i className={`fas ${slippage_percent >= 0 ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-danger'} mr-1`}></i>
-                  <span style={{ color: slippage_percent >= 0 ? 'var(--c-green)' : 'var(--c-red)' }}>
-                    {slippage_percent >= 0 ? 'On Track' : 'Behind Schedule'}
-                  </span>
-                  <span className={`slippage-value ${slipClass}`} style={{ marginLeft: 'auto' }}>
+                <div className={`banner-slippage ${isBehind ? 'behind' : 'ontrack'}`}>
+                  <span>{isBehind ? '⚠️' : '✓'}</span>
+                  <span>
+                    {isBehind ? 'Behind Schedule' : 'On Schedule'}{' '}
                     {slippage_percent > 0 ? '+' : ''}{slippage_percent.toFixed(3)}%
                   </span>
                 </div>
               )}
 
-              {/* Actual bar */}
-              <div>
+              {/* Actual progress bar */}
+              <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span className="text-xs text-muted" style={{ fontWeight: 600 }}>Actual</span>
-                  <span className="text-xs" style={{ fontWeight: 700, color: 'var(--c-text)' }}>
+                  <span className="text-xs mono" style={{ fontWeight: 700, color: isBehind ? 'var(--red)' : 'var(--green)' }}>
                     {actual_percent != null ? `${actual_percent.toFixed(3)}%` : '—'}
                   </span>
                 </div>
-                <div className="progress-bar-wrap">
-                  <div className={`progress-bar-fill ${barClass}`} style={{ width: `${actualPct}%` }} />
+                <div className="progress-track-thin">
+                  <div
+                    className="progress-fill-thin"
+                    style={{
+                      width: `${actualPct}%`,
+                      background: isBehind ? 'var(--red)' : 'var(--green)',
+                    }}
+                  />
                 </div>
               </div>
 
-              {/* Target bar */}
+              {/* Target progress bar */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span className="text-xs text-muted" style={{ fontWeight: 600 }}>Target</span>
-                  <span className="text-xs" style={{ fontWeight: 700, color: 'var(--c-text-3)' }}>
+                  <span className="text-xs mono text-muted" style={{ fontWeight: 700 }}>
                     {target_percent != null ? `${target_percent.toFixed(3)}%` : '—'}
                   </span>
                 </div>
-                <div className="progress-bar-wrap">
-                  <div className="progress-bar-fill target" style={{ width: `${targetPct}%` }} />
+                <div className="progress-track-thin">
+                  <div
+                    className="progress-fill-thin"
+                    style={{ width: `${targetPct}%`, background: '#94A3B8' }}
+                  />
                 </div>
               </div>
             </div>

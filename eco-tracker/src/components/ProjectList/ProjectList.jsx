@@ -1,4 +1,4 @@
-// ProjectList.jsx — Project list with SB Admin 2 Stat Cards & Data Table styling
+// ProjectList.jsx — Project list with stat cards & redesigned table
 import { useState, useEffect } from 'react';
 import { getProjects } from '../../data/projectsRepo.js';
 import FilterBar from '../shared/FilterBar.jsx';
@@ -12,72 +12,66 @@ function StatsBar({ projects }) {
   const completed = projects.filter(p => p.category === 'Completed').length;
 
   return (
-    <div className="row mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-      {/* Total Projects Card */}
-      <div className="card border-left-primary shadow py-2">
-        <div className="card-body py-2">
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                Total Projects
-              </div>
-              <div className="h4 mb-0 font-weight-bold text-gray-800">{total}</div>
-            </div>
-            <div>
-              <i className="fas fa-clipboard-list fa-2x text-gray-300"></i>
-            </div>
-          </div>
+    <div className="stats-bar">
+      <div className="stat-card stat-total">
+        <div className="stat-icon total">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="7" y1="8" x2="17" y2="8"></line>
+            <line x1="7" y1="12" x2="17" y2="12"></line>
+            <line x1="7" y1="16" x2="13" y2="16"></line>
+          </svg>
+        </div>
+        <div className="stat-info">
+          <div className="stat-value total">{total}</div>
+          <div className="stat-label">Total Projects</div>
         </div>
       </div>
 
-      {/* On-going Card */}
-      <div className="card border-left-success shadow py-2">
-        <div className="card-body py-2">
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <div className="text-xs font-weight-bold text-success text-uppercase mb-1">
-                On-going
-              </div>
-              <div className="h4 mb-0 font-weight-bold text-gray-800">{ongoing}</div>
-            </div>
-            <div>
-              <i className="fas fa-hard-hat fa-2x text-gray-300"></i>
-            </div>
-          </div>
+      <div className="stat-card stat-ongoing">
+        <div className="stat-icon ongoing">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path>
+            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path>
+            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path>
+            <path d="M10 6h4"></path>
+            <path d="M10 10h4"></path>
+            <path d="M10 14h4"></path>
+            <path d="M10 18h4"></path>
+          </svg>
+        </div>
+        <div className="stat-info">
+          <div className="stat-value ongoing">{ongoing}</div>
+          <div className="stat-label">On-going</div>
         </div>
       </div>
 
-      {/* Proposed Card */}
-      <div className="card border-left-warning shadow py-2">
-        <div className="card-body py-2">
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <div className="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                Proposed
-              </div>
-              <div className="h4 mb-0 font-weight-bold text-gray-800">{proposed}</div>
-            </div>
-            <div>
-              <i className="fas fa-file-invoice fa-2x text-gray-300"></i>
-            </div>
-          </div>
+      <div className="stat-card stat-proposed">
+        <div className="stat-icon proposed">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div className="stat-info">
+          <div className="stat-value proposed">{proposed}</div>
+          <div className="stat-label">Proposed</div>
         </div>
       </div>
 
-      {/* Completed Card */}
-      <div className="card border-left-info shadow py-2">
-        <div className="card-body py-2">
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <div className="text-xs font-weight-bold text-info text-uppercase mb-1">
-                Completed
-              </div>
-              <div className="h4 mb-0 font-weight-bold text-gray-800">{completed}</div>
-            </div>
-            <div>
-              <i className="fas fa-check-circle fa-2x text-gray-300"></i>
-            </div>
-          </div>
+      <div className="stat-card stat-completed">
+        <div className="stat-icon completed">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div className="stat-info">
+          <div className="stat-value completed">{completed}</div>
+          <div className="stat-label">Completed</div>
         </div>
       </div>
     </div>
@@ -117,15 +111,14 @@ export default function ProjectList({ onSelectProject }) {
   });
 
   if (loading) return (
-    <div className="text-center py-5 text-gray-500">
-      <i className="fas fa-spinner fa-spin fa-2x mb-3 text-primary"></i>
-      <div>Loading projects…</div>
+    <div className="loading-wrap">
+      <div className="spinner" />
+      <span>Loading projects…</span>
     </div>
   );
 
   if (error) return (
-    <div className="alert alert-danger shadow-sm">
-      <i className="fas fa-exclamation-triangle mr-2"></i>
+    <div className="error-box">
       <strong>Failed to load data.</strong> {error}
     </div>
   );
@@ -137,26 +130,31 @@ export default function ProjectList({ onSelectProject }) {
     Completed: projects.filter(p => p.category === 'Completed').length,
   };
 
+  const catClass = (cat) => {
+    if (cat === 'On-going') return 'cat-ongoing';
+    if (cat === 'Proposed') return 'cat-proposed';
+    if (cat === 'Completed') return 'cat-completed';
+    return '';
+  };
+
   return (
     <div>
       <StatsBar projects={projects} />
 
-      <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div className="page-header">
         <div>
-          <h1 className="h3 mb-0 font-weight-bold text-gray-800">
-            ECO Infrastructure Projects
-          </h1>
-          <p className="text-muted text-xs mb-0 mt-1">
-            {filtered.length} project{filtered.length !== 1 ? 's' : ''} listed
-            {filter !== 'All' ? ` · Filtered by ${filter}` : ''}
-            {search ? ` · Searching "${search}"` : ''}
+          <h1 className="page-title">ECO Infrastructure Projects</h1>
+          <p className="page-subtitle">
+            {filtered.length} project{filtered.length !== 1 ? 's' : ''} shown
+            {filter !== 'All' ? ` · ${filter}` : ''}
+            {search ? ` · searching "${search}"` : ''}
           </p>
         </div>
         <button
-          className="btn btn-primary shadow-sm"
+          className="btn btn-primary"
           onClick={() => setShowAddProject(true)}
         >
-          <i className="fas fa-plus fa-sm text-white-50 mr-1"></i> Add Project
+          + Add Project
         </button>
       </div>
 
@@ -168,96 +166,102 @@ export default function ProjectList({ onSelectProject }) {
         counts={counts}
       />
 
-      <div className="card shadow mb-4" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="table-container">
         {filtered.length === 0 ? (
-          <div className="empty-state">
-            <i className="fas fa-folder-open fa-2x mb-2 text-gray-300"></i>
-            <div>No projects match your filters.</div>
-          </div>
+          <div className="empty-state">No projects match your filters.</div>
         ) : (
-          <div className="table-responsive">
-            <table className="project-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 36 }}>#</th>
-                  <th>Project Name</th>
-                  <th>Category</th>
-                  <th>Contractor(s)</th>
-                  <th>Contract Amount</th>
-                  <th>Progress</th>
-                  <th>Completion Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p, i) => {
-                  const progress = p.progressUpdates?.[0] ?? null;
-                  const slip = progress?.slippage_percent ?? null;
-                  const amount = p.revised_contract_amount ?? p.original_contract_amount;
-                  const contractorNames = (p.contractors || []).map(c => c.contractor_name).filter(Boolean);
-                  const completionDate = p.new_completion_date || p.original_completion_date;
+          <table className="project-table">
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>#</th>
+                <th>Project Name</th>
+                <th>Category</th>
+                <th>Contractor(s)</th>
+                <th>Contract Amount</th>
+                <th>Progress</th>
+                <th>Completion Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p, i) => {
+                const progress = p.progressUpdates?.[0] ?? null;
+                const slip = progress?.slippage_percent ?? null;
+                const amount = p.revised_contract_amount ?? p.original_contract_amount;
+                const contractorNames = (p.contractors || []).map(c => c.contractor_name).filter(Boolean);
+                const completionDate = p.new_completion_date || p.original_completion_date;
 
-                  return (
-                    <tr
-                      key={p.project_no}
-                      className="project-row"
-                      onClick={() => onSelectProject(p.project_no)}
-                    >
-                      <td className="text-muted text-xs font-weight-bold">{i + 1}</td>
-                      <td>
-                        <span className="project-name-cell">{p.project_name}</span>
-                        {p.source === 'local' && <span className="local-tag">LOCAL</span>}
-                        {p.project_id_code && (
-                          <div className="text-muted text-xs mt-1 mono">
-                            {p.project_id_code}
+                const fillClass = slip === null || slip === undefined ? 'fill-gray'
+                  : slip >= 0 ? 'fill-green'
+                  : slip >= -10 ? 'fill-amber'
+                  : 'fill-red';
+
+                return (
+                  <tr
+                    key={p.project_no}
+                    className={`project-row ${catClass(p.category)}`}
+                    onClick={() => onSelectProject(p.project_no)}
+                  >
+                    <td className="text-muted text-xs" style={{ fontWeight: 600 }}>{i + 1}</td>
+                    <td>
+                      <div className="project-name-cell">{p.project_name}</div>
+                      {p.project_id_code && (
+                        <div className="project-code-text">
+                          {p.project_id_code}
+                          {p.source === 'local' && <span className="local-tag" style={{ marginLeft: 6 }}>LOCAL</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <Badge variant={categoryVariant(p.category)}>{p.category}</Badge>
+                    </td>
+                    <td style={{ maxWidth: 220 }}>
+                      {contractorNames.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                          {contractorNames.map((n, i2) => (
+                            <span key={i2} className="chip-contractor">{n}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {amount != null ? (
+                        <span className="contract-amount-text">
+                          {formatCurrency(amount)}
+                        </span>
+                      ) : <span className="text-muted">—</span>}
+                    </td>
+                    <td>
+                      {progress && progress.actual_percent != null ? (
+                        <div className="progress-column-wrap">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span className="text-xs text-muted" style={{ fontWeight: 600 }}>
+                              {progress.actual_percent?.toFixed(1)}%
+                            </span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: (slip ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                              {progressLabel(slip)}
+                            </span>
                           </div>
-                        )}
-                      </td>
-                      <td>
-                        <Badge variant={categoryVariant(p.category)}>{p.category}</Badge>
-                      </td>
-                      <td className="text-sm" style={{ maxWidth: 200, color: '#5a5c69' }}>
-                        {contractorNames.length > 0
-                          ? contractorNames.map((n, i2) => (
-                            <div key={i2} style={i2 > 0 ? { marginTop: 2 } : {}}>{n}</div>
-                          ))
-                          : <span className="text-muted">—</span>}
-                      </td>
-                      <td>
-                        {amount != null ? (
-                          <span className="font-weight-bold text-primary mono text-sm">
-                            {formatCurrency(amount)}
-                          </span>
-                        ) : <span className="text-muted">—</span>}
-                      </td>
-                      <td>
-                        {progress ? (
-                          <div style={{ minWidth: 110 }}>
-                            <div className="d-flex align-items-center justify-content-between mb-1">
-                              <Badge variant={progressVariant(slip)}>{progressLabel(slip)}</Badge>
-                              <span className="text-xs text-muted font-weight-bold ml-1">
-                                {progress.actual_percent?.toFixed(1)}%
-                              </span>
-                            </div>
-                            <div className="progress-bar-wrap" style={{ margin: 0 }}>
-                              <div
-                                className={`progress-bar-fill ${(slip ?? 0) >= 0 ? 'on-track' : 'behind'}`}
-                                style={{ width: `${Math.min(100, Math.max(0, progress.actual_percent ?? 0))}%` }}
-                              />
-                            </div>
+                          <div className="progress-track-thin">
+                            <div
+                              className={`progress-fill-thin ${fillClass}`}
+                              style={{ width: `${Math.min(100, Math.max(0, progress.actual_percent ?? 0))}%` }}
+                            />
                           </div>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                      <td className="text-sm text-gray-700" style={{ whiteSpace: 'nowrap' }}>
-                        {completionDate || <span className="text-muted">—</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="text-sm text-muted" style={{ whiteSpace: 'nowrap' }}>
+                      {completionDate || '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 

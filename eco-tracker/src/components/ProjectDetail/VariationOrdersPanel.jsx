@@ -13,7 +13,7 @@ function formatDateForDisplay(dateStr) {
   return dateStr;
 }
 
-/* ─── Single VO row with its own auth state ───────────────────── */
+/* ─── Single VO Card Item ─────────────────────────────────────── */
 function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -57,7 +57,7 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
   };
 
   return (
-    <div className="vo-item">
+    <div className="vo-card-item">
       <PasswordModal
         isOpen={showAuthModal}
         onClose={() => { setShowAuthModal(false); setPendingAction(null); }}
@@ -66,70 +66,63 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
         description={authDesc}
       />
 
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-          <div style={{ fontWeight: 600 }}>Variation Order #{vo.vo_number}</div>
-        </div>
-        {vo.date_submitted && <div className="vo-meta">Submitted: {vo.date_submitted}</div>}
-        {vo.revised_amount && (
-          <div className="vo-meta" style={{ color: 'var(--c-text-2)', fontWeight: 500 }}>
-            Revised Contract Amount: {formatCurrency(vo.revised_amount)}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-3)' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>
+              Variation Order #{vo.vo_number}
+            </span>
+            <span className="vo-amount-bold">
+              {formatCurrency(vo.amount)}
+            </span>
           </div>
-        )}
-        {vo.details && <div className="text-sm mt-2">{vo.details}</div>}
+
+          {vo.date_submitted && (
+            <div className="text-xs text-muted mt-1">Submitted: {vo.date_submitted}</div>
+          )}
+          {vo.revised_amount && (
+            <div className="text-xs mono mt-1" style={{ color: 'var(--blue)', fontWeight: 600 }}>
+              Revised Contract Amount: {formatCurrency(vo.revised_amount)}
+            </div>
+          )}
+          {vo.details && (
+            <div className="text-sm mt-2" style={{ color: 'var(--navy)' }}>{vo.details}</div>
+          )}
+        </div>
+
+        <button
+          onClick={handleDeleteClick}
+          title="Delete Variation Order"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 16,
+            color: 'var(--red)',
+            padding: '2px 6px',
+            borderRadius: 4,
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
       </div>
 
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
-          <div style={{ fontWeight: 600, fontSize: 'var(--text-base)', color: 'var(--c-primary)' }}>
-            {formatCurrency(vo.amount)}
-          </div>
+      {vo.status && (
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, pt: 8, borderTop: '1px solid var(--border)' }}>
+          <span onClick={handleStatusClick} style={{ cursor: 'pointer' }}>
+            <Badge variant={voStatusVariant(vo.status)}>{vo.status}</Badge>
+          </span>
+
           <button
-            onClick={handleDeleteClick}
-            title="Delete Variation Order"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 13,
-              color: 'var(--c-red)',
-              padding: '2px 4px',
-              borderRadius: 4,
-              lineHeight: 1,
-            }}
+            className="btn-outline-pill"
+            onClick={handleStatusClick}
+            style={{ padding: '2px 8px', fontSize: 10 }}
           >
-            <i className="fas fa-trash-alt"></i>
+            ⇄ Change
           </button>
         </div>
-        {vo.status && (
-          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
-            <span
-              onClick={handleStatusClick}
-              title={`Click to change to "${nextStatus}"`}
-              style={{ cursor: 'pointer' }}
-            >
-              <Badge variant={voStatusVariant(vo.status)}>{vo.status}</Badge>
-            </span>
-            <button
-              onClick={handleStatusClick}
-              title={`Change status to "${nextStatus}"`}
-              style={{
-                background: 'none',
-                border: '1px solid var(--c-border)',
-                cursor: 'pointer',
-                fontSize: 10,
-                color: 'var(--c-text-3)',
-                padding: '2px 6px',
-                borderRadius: 4,
-                lineHeight: 1.4,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <i className="fas fa-exchange-alt mr-1"></i> Change
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -195,53 +188,44 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
         description="Enter authorization password to modify variation orders."
       />
 
-      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 className="card-title">
-          <i className="fas fa-file-alt mr-2 text-primary" style={{ fontSize: '0.95rem' }}></i>
-          Variation Orders ({voList.length})
-        </h3>
+      <div className="card-header">
+        <h3 className="card-title">Variation Orders ({voList.length})</h3>
         {!showAddForm && (
           <button
-            className="btn btn-primary btn-xs"
+            className="btn btn-primary btn-sm"
             onClick={handleAddClick}
-            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
           >
-            <i className="fas fa-plus mr-1"></i> Add VO
+            + Add VO
           </button>
         )}
       </div>
 
       {showAddForm && (
-        <div style={{ padding: 'var(--sp-4)', background: 'var(--c-gray-bg)', borderBottom: '1px solid var(--c-border)' }}>
-          <div style={{ fontWeight: 600, marginBottom: 'var(--sp-3)', fontSize: 'var(--text-sm)', color: 'var(--c-text)' }}>
+        <div style={{ padding: 'var(--sp-4)', background: 'var(--gray-light)', borderRadius: 'var(--r-md)', marginBottom: 'var(--sp-4)', border: '1px solid var(--border)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 'var(--sp-3)', fontSize: 13, color: 'var(--navy)' }}>
             New Variation Order
           </div>
 
           <form onSubmit={handleAddSubmit}>
             {error && (
-              <div style={{ color: 'var(--c-red)', fontSize: 'var(--text-xs)', marginBottom: 'var(--sp-2)' }}>
+              <div style={{ color: 'var(--red)', fontSize: 11, marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
                 {error}
               </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
               <div>
-                <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                  Date Submitted
-                </label>
+                <label className="form-label" style={{ fontSize: 11 }}>Date Submitted</label>
                 <input
                   type="date"
                   className="form-input"
                   value={dateSubmitted}
                   onChange={e => setDateSubmitted(e.target.value)}
-                  style={{ width: '100%', fontSize: 'var(--text-sm)' }}
                 />
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                  VO Amount (₱)
-                </label>
+                <label className="form-label" style={{ fontSize: 11 }}>VO Amount (₱)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -250,7 +234,6 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
                   className="form-input"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  style={{ width: '100%', fontSize: 'var(--text-sm)' }}
                   required
                 />
               </div>
@@ -258,9 +241,7 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
               <div>
-                <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                  Revised Contract Amount due to VO (₱)
-                </label>
+                <label className="form-label" style={{ fontSize: 11 }}>Revised Contract Amount due to VO (₱)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -269,19 +250,15 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
                   className="form-input"
                   value={revisedAmount}
                   onChange={e => setRevisedAmount(e.target.value)}
-                  style={{ width: '100%', fontSize: 'var(--text-sm)' }}
                 />
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                  Status
-                </label>
+                <label className="form-label" style={{ fontSize: 11 }}>Status</label>
                 <select
                   className="form-select"
                   value={status}
                   onChange={e => setStatus(e.target.value)}
-                  style={{ width: '100%', fontSize: 'var(--text-sm)', padding: '6px 10px' }}
                 >
                   <option value="Approved">Approved</option>
                   <option value="Subject for BOR Approval">Subject for BOR Approval</option>
@@ -290,16 +267,13 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
             </div>
 
             <div style={{ marginBottom: 'var(--sp-3)' }}>
-              <label className="form-label" style={{ fontSize: 'var(--text-xs)', marginBottom: 4, display: 'block' }}>
-                Details / Remarks (Optional)
-              </label>
+              <label className="form-label" style={{ fontSize: 11 }}>Details / Remarks (Optional)</label>
               <textarea
                 className="form-textarea"
                 rows={2}
                 placeholder="Details of variation order..."
                 value={details}
                 onChange={e => setDetails(e.target.value)}
-                style={{ width: '100%', fontSize: 'var(--text-sm)' }}
               />
             </div>
 
@@ -322,7 +296,7 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
       {voList.length === 0 ? (
         <div className="empty-state">No variation orders recorded.</div>
       ) : (
-        <div className="item-list">
+        <div>
           {voList.map(vo => (
             <VOItem
               key={vo.vo_id}
@@ -339,4 +313,3 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
     </div>
   );
 }
-

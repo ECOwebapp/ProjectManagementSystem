@@ -1,20 +1,21 @@
-// Badge.jsx — Status badge with SB Admin 2 styling & FontAwesome icons
-import React from 'react';
-
+// Badge.jsx — Status badge & helper utilities
 export default function Badge({ children, variant = 'gray' }) {
   return <span className={`badge badge-${variant}`}>{children}</span>;
 }
 
 // Helpers to derive badge variant from data
 export function categoryVariant(cat) {
-  return cat === 'On-going' ? 'primary' : 'warning';
+  if (cat === 'On-going') return 'green';
+  if (cat === 'Proposed') return 'amber';
+  if (cat === 'Completed') return 'gray';
+  return 'blue';
 }
 
 export function progressVariant(slippage) {
-  if (slippage === null || slippage === undefined) return 'secondary';
-  if (slippage >= 0) return 'success';
-  if (slippage >= -10) return 'warning';
-  return 'danger';
+  if (slippage === null || slippage === undefined) return 'gray';
+  if (slippage >= 0) return 'green';
+  if (slippage >= -10) return 'amber';
+  return 'red';
 }
 
 export function progressLabel(slippage) {
@@ -26,13 +27,13 @@ export function progressLabel(slippage) {
 
 export function voStatusVariant(status = '') {
   const s = status.toLowerCase();
-  if (s.includes('approved')) return 'success';
-  if (s.includes('bor') || s.includes('pending') || s.includes('subject')) return 'warning';
-  if (s.includes('reject') || s.includes('cancel')) return 'danger';
-  return 'secondary';
+  if (s.includes('approved') && !s.includes('subject') && !s.includes('bor')) return 'green';
+  if (s.includes('bor') || s.includes('pending') || s.includes('subject')) return 'amber';
+  if (s.includes('reject') || s.includes('cancel')) return 'red';
+  return 'gray';
 }
 
 export function formatCurrency(amount) {
   if (amount === null || amount === undefined) return 'N/A';
-  return '₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '₱' + Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

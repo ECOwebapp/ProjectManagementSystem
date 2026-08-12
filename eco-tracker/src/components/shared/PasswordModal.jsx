@@ -41,9 +41,7 @@ export default function PasswordModal({ isOpen, onClose, onSuccess, title = 'Aut
     <div style={styles.overlay} onClick={handleClose}>
       <div style={styles.modal} onClick={e => e.stopPropagation()}>
         <div style={styles.header}>
-          <div style={styles.iconWrap}>
-            <i className="fas fa-lock text-primary"></i>
-          </div>
+          <div style={styles.iconWrap}>🔒</div>
           <div>
             <h4 style={styles.title}>{title}</h4>
             <p style={styles.desc}>{description}</p>
