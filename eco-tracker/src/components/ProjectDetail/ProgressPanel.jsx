@@ -63,6 +63,7 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
   const [puList, setPuList] = useState(initialUpdates);
   const [editing, setEditing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingSave, setPendingSave] = useState(null);
 
   const latest = puList.length > 0 ? puList[puList.length - 1] : {};
 
@@ -78,6 +79,7 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
   );
   const [error, setError] = useState('');
 
+  // Edit opens freely — no password required to open
   const openEdit = () => {
     setActualInput(latest.actual_percent !== undefined && latest.actual_percent !== null ? latest.actual_percent : '');
     setTargetInput(latest.target_percent !== undefined && latest.target_percent !== null ? latest.target_percent : '');
@@ -86,11 +88,18 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
     setEditing(true);
   };
 
-  const handleEditClick = () => {
-    if (isAuthorized()) openEdit();
-    else setShowAuthModal(true);
+  const executeSave = (actualVal, targetVal, formattedDate) => {
+    const updated = updateProgress(projectNo, {
+      actual_percent: actualVal,
+      target_percent: targetVal,
+      as_of_date: formattedDate || null,
+    });
+    setPuList(prev => [...prev, updated]);
+    setEditing(false);
+    setPendingSave(null);
   };
 
+  // Password required when clicking Save Progress
   const handleSave = (e) => {
     e.preventDefault();
     const actualVal = parseFloat(actualInput);
@@ -105,13 +114,12 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
     }
     setError('');
     const formattedDate = formatDateForDisplay(asOfInput);
-    const updated = updateProgress(projectNo, {
-      actual_percent: actualVal,
-      target_percent: targetVal,
-      as_of_date: formattedDate || null,
-    });
-    setPuList(prev => [...prev, updated]);
-    setEditing(false);
+    if (isAuthorized()) {
+      executeSave(actualVal, targetVal, formattedDate);
+    } else {
+      setPendingSave(() => () => executeSave(actualVal, targetVal, formattedDate));
+      setShowAuthModal(true);
+    }
   };
 
   const actual_percent    = latest.actual_percent ?? null;
@@ -132,14 +140,14 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
     <div className="card">
       <PasswordModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={openEdit}
-        title="Unlock Progress Editing"
-        description="Enter authorization password to edit progress data."
+        onClose={() => { setShowAuthModal(false); setPendingSave(null); }}
+        onSuccess={() => { if (pendingSave) pendingSave(); }}
+        title="Authorization Required to Save"
+        description="Enter authorization password to save progress data."
       />
 
       <div className="card-header">
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--sp-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
           <h3 className="card-title">Progress & Milestones</h3>
           {as_of_date && (
             <span className="text-muted text-xs">As of {as_of_date}</span>
@@ -148,7 +156,7 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
         {!editing && (
           <button
             className="btn-outline-pill"
-            onClick={handleEditClick}
+            onClick={openEdit}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
             <span>✎</span> Edit

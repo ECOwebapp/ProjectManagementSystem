@@ -13,7 +13,7 @@ function formatDateForDisplay(dateStr) {
   return dateStr;
 }
 
-/* ─── Single VO Card Item with Kebab Menu ─────────────────────── */
+/* ─── Single VO Card Item ─────────────────────────────────────── */
 function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -24,13 +24,18 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Edit Amount / Details inline state
-  const [editing, setEditing]         = useState(false);
-  const [editAmount, setEditAmount]   = useState(vo.amount ?? '');
-  const [editRevised, setEditRevised] = useState(vo.revised_amount ?? '');
-  const [editDetails, setEditDetails] = useState(vo.details ?? '');
+  // Status picker state — opens freely
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [statusOption, setStatusOption]   = useState('Approved');
+  const [customStatus, setCustomStatus]   = useState('');
 
-  // Close dropdown on click outside
+  // Amount edit state — opens freely
+  const [editingAmount, setEditingAmount] = useState(false);
+  const [editAmount, setEditAmount]     = useState(vo.amount ?? '');
+  const [editRevised, setEditRevised]   = useState(vo.revised_amount ?? '');
+  const [editDetails, setEditDetails]   = useState(vo.details ?? '');
+
+  // Close dropdown on outside click
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(e) {
@@ -42,78 +47,99 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  const isApproved = vo.status === 'Approved';
-  const nextStatus = isApproved ? 'Subject for BOR Approval' : 'Approved';
-
-  /* Actions */
-  const doStatusChange = () => {
-    const updated = updateVariationOrder(projectNo, vo.vo_id, { status: nextStatus });
-    if (updated) onStatusChange(vo.vo_id, nextStatus);
-  };
-
-  const handleStatusMenuClick = () => {
-    setMenuOpen(false);
-    if (isAuthorized()) {
-      doStatusChange();
+  /* ── Open forms freely (no password yet) ── */
+  const openStatusPicker = () => {
+    const current = vo.status || 'Subject for BOR Approval';
+    if (current === 'Approved' || current === 'Subject for BOR Approval') {
+      setStatusOption(current);
+      setCustomStatus('');
     } else {
-      setAuthTitle('Unlock Status Change');
-      setAuthDesc(`Enter authorization password to set status to "${nextStatus}".`);
-      setPendingAction(() => doStatusChange);
-      setShowAuthModal(true);
+      setStatusOption('Other');
+      setCustomStatus(current);
     }
+    setEditingAmount(false);
+    setEditingStatus(true);
+    setMenuOpen(false);
   };
 
-  const doOpenEdit = () => {
+  const openEditAmount = () => {
     setEditAmount(vo.amount ?? '');
     setEditRevised(vo.revised_amount ?? '');
     setEditDetails(vo.details ?? '');
-    setEditing(true);
-  };
-
-  const handleEditAmountMenuClick = () => {
+    setEditingStatus(false);
+    setEditingAmount(true);
     setMenuOpen(false);
-    if (isAuthorized()) {
-      doOpenEdit();
-    } else {
-      setAuthTitle('Unlock VO Amount Editing');
-      setAuthDesc('Enter authorization password to edit this variation order.');
-      setPendingAction(() => doOpenEdit);
-      setShowAuthModal(true);
-    }
   };
 
-  const doDelete = () => {
-    if (!window.confirm('Are you sure you want to delete this variation order?')) return;
+  /* ── Execute saves (called after password passes) ── */
+  const executeStatusSave = (finalStatus) => {
+    const updated = updateVariationOrder(projectNo, vo.vo_id, { status: finalStatus });
+    if (updated) onStatusChange(vo.vo_id, finalStatus);
+    setEditingStatus(false);
+    setPendingAction(null);
+  };
+
+  const executeAmountSave = (patch) => {
+    updateVariationOrder(projectNo, vo.vo_id, patch);
+    if (onUpdateVO) onUpdateVO(vo.vo_id, patch);
+    setEditingAmount(false);
+    setPendingAction(null);
+  };
+
+  const executeDelete = () => {
     deleteVariationOrder(projectNo, vo.vo_id);
     onDelete(vo.vo_id);
+    setPendingAction(null);
   };
 
-  const handleDeleteMenuClick = () => {
-    setMenuOpen(false);
+  /* ── Form submit handlers — password required here ── */
+  const handleSaveStatus = (e) => {
+    e.preventDefault();
+    let finalStatus = statusOption;
+    if (statusOption === 'Other') {
+      if (!customStatus.trim()) return;
+      finalStatus = customStatus.trim();
+    }
     if (isAuthorized()) {
-      doDelete();
+      executeStatusSave(finalStatus);
     } else {
-      setAuthTitle('Unlock Variation Order Deletion');
-      setAuthDesc('Enter authorization password to delete this variation order.');
-      setPendingAction(() => doDelete);
+      setAuthTitle('Authorization Required to Save');
+      setAuthDesc(`Enter password to set status to "${finalStatus}".`);
+      setPendingAction(() => () => executeStatusSave(finalStatus));
       setShowAuthModal(true);
     }
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveAmountEdit = (e) => {
     e.preventDefault();
     const parsedAmt = parseFloat(editAmount);
     if (isNaN(parsedAmt) || parsedAmt <= 0) return;
-
     const patch = {
       amount: parsedAmt,
       revised_amount: editRevised ? parseFloat(editRevised) : null,
       details: editDetails.trim() || null,
     };
+    if (isAuthorized()) {
+      executeAmountSave(patch);
+    } else {
+      setAuthTitle('Authorization Required to Save');
+      setAuthDesc('Enter password to save variation order changes.');
+      setPendingAction(() => () => executeAmountSave(patch));
+      setShowAuthModal(true);
+    }
+  };
 
-    const updated = updateVariationOrder(projectNo, vo.vo_id, patch);
-    if (onUpdateVO) onUpdateVO(vo.vo_id, patch);
-    setEditing(false);
+  const handleDeleteClick = () => {
+    setMenuOpen(false);
+    if (!window.confirm('Are you sure you want to delete this variation order?')) return;
+    if (isAuthorized()) {
+      executeDelete();
+    } else {
+      setAuthTitle('Authorization Required to Delete');
+      setAuthDesc('Enter password to delete this variation order.');
+      setPendingAction(() => executeDelete);
+      setShowAuthModal(true);
+    }
   };
 
   return (
@@ -132,9 +158,7 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
             <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>
               Variation Order #{vo.vo_number}
             </span>
-            <span className="vo-amount-bold">
-              {formatCurrency(vo.amount)}
-            </span>
+            <span className="vo-amount-bold">{formatCurrency(vo.amount)}</span>
           </div>
 
           {vo.date_submitted && (
@@ -162,7 +186,8 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
 
           {menuOpen && (
             <div className="kebab-dropdown">
-              <button className="kebab-item" onClick={handleStatusMenuClick}>
+              {/* Opens form directly — no password yet */}
+              <button className="kebab-item" onClick={openStatusPicker}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -170,14 +195,16 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
                 <span>Change Status</span>
               </button>
 
-              <button className="kebab-item" onClick={handleEditAmountMenuClick}>
+              {/* Opens form directly — no password yet */}
+              <button className="kebab-item" onClick={openEditAmount}>
                 <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-mono)', width: 14, textAlign: 'center', display: 'inline-block', lineHeight: 1 }}>₱</span>
                 <span>Edit Amount</span>
               </button>
 
               <div className="kebab-divider" />
 
-              <button className="kebab-item danger" onClick={handleDeleteMenuClick}>
+              {/* Password checked inside after confirm */}
+              <button className="kebab-item danger" onClick={handleDeleteClick}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -189,45 +216,82 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
         </div>
       </div>
 
-      {/* Inline Edit Form for Amount / Details */}
-      {editing && (
-        <form onSubmit={handleSaveEdit} style={{ marginTop: 12, padding: 12, background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
-          <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: 'var(--navy)' }}>Edit Variation Order #{vo.vo_number}</div>
+      {/* Change Status Choice Picker — password only on Save */}
+      {editingStatus && (
+        <form onSubmit={handleSaveStatus} style={{ marginTop: 12, padding: 12, background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
+          <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: 'var(--navy)' }}>
+            Select Status for VO #{vo.vo_number}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+              <input type="radio" name={`vo-status-${vo.vo_id}`} value="Approved"
+                checked={statusOption === 'Approved'} onChange={() => setStatusOption('Approved')} />
+              <span>Approved</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+              <input type="radio" name={`vo-status-${vo.vo_id}`} value="Subject for BOR Approval"
+                checked={statusOption === 'Subject for BOR Approval'} onChange={() => setStatusOption('Subject for BOR Approval')} />
+              <span>Subject for BOR Approval</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+              <input type="radio" name={`vo-status-${vo.vo_id}`} value="Other"
+                checked={statusOption === 'Other'} onChange={() => setStatusOption('Other')} />
+              <span>Other (Custom)</span>
+            </label>
+          </div>
+
+          {statusOption === 'Other' && (
+            <div style={{ marginBottom: 10 }}>
+              <input
+                type="text" className="form-input" autoFocus
+                placeholder="Type custom status (e.g. Under Evaluation)..."
+                value={customStatus} onChange={e => setCustomStatus(e.target.value)}
+                style={{ fontSize: 12 }} required
+              />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+            <button type="button" className="btn btn-ghost btn-xs" onClick={() => setEditingStatus(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary btn-xs">Save Status</button>
+          </div>
+        </form>
+      )}
+
+      {/* Edit Amount Form — password only on Save */}
+      {editingAmount && (
+        <form onSubmit={handleSaveAmountEdit} style={{ marginTop: 12, padding: 12, background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
+          <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: 'var(--navy)' }}>
+            Edit Variation Order #{vo.vo_number}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div>
               <label className="form-label" style={{ fontSize: 10 }}>VO Amount (₱)</label>
-              <input
-                type="number" step="0.01" min="0"
-                className="form-input" style={{ fontSize: 12 }}
-                value={editAmount} onChange={e => setEditAmount(e.target.value)} required
-              />
+              <input type="number" step="0.01" min="0" className="form-input" style={{ fontSize: 12 }}
+                value={editAmount} onChange={e => setEditAmount(e.target.value)} required />
             </div>
             <div>
               <label className="form-label" style={{ fontSize: 10 }}>Revised Contract Amount (₱)</label>
-              <input
-                type="number" step="0.01" min="0"
-                className="form-input" style={{ fontSize: 12 }}
-                value={editRevised} onChange={e => setEditRevised(e.target.value)}
-              />
+              <input type="number" step="0.01" min="0" className="form-input" style={{ fontSize: 12 }}
+                value={editRevised} onChange={e => setEditRevised(e.target.value)} />
             </div>
           </div>
           <div style={{ marginBottom: 8 }}>
             <label className="form-label" style={{ fontSize: 10 }}>Details / Remarks</label>
-            <input
-              type="text" className="form-input" style={{ fontSize: 12 }}
-              value={editDetails} onChange={e => setEditDetails(e.target.value)}
-            />
+            <input type="text" className="form-input" style={{ fontSize: 12 }}
+              value={editDetails} onChange={e => setEditDetails(e.target.value)} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-            <button type="button" className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
+            <button type="button" className="btn btn-ghost btn-xs" onClick={() => setEditingAmount(false)}>Cancel</button>
             <button type="submit" className="btn btn-primary btn-xs">Save Changes</button>
           </div>
         </form>
       )}
 
-      {/* Bottom Status Chip (no separate change button!) */}
-      {vo.status && !editing && (
-        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', pt: 8 }}>
+      {/* Status Chip */}
+      {vo.status && !editingStatus && !editingAmount && (
+        <div style={{ marginTop: 10 }}>
           <Badge variant={voStatusVariant(vo.status)}>{vo.status}</Badge>
         </div>
       )}
@@ -242,46 +306,48 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
-  // Form state
   const todayISO = new Date().toISOString().split('T')[0];
   const [dateSubmitted, setDateSubmitted] = useState(todayISO);
   const [amount, setAmount] = useState('');
   const [revisedAmount, setRevisedAmount] = useState('');
   const [details, setDetails] = useState('');
-  const [status, setStatus] = useState('Subject for BOR Approval');
+  const [statusSelect, setStatusSelect] = useState('Subject for BOR Approval');
+  const [customStatusAdd, setCustomStatusAdd] = useState('');
   const [error, setError] = useState('');
 
+  const executeAddVO = (newVO) => {
+    setVoList(prev => [...prev, newVO]);
+    setAmount(''); setRevisedAmount(''); setDetails('');
+    setStatusSelect('Subject for BOR Approval'); setCustomStatusAdd('');
+    setDateSubmitted(todayISO); setShowAddForm(false);
+    setPendingAction(null);
+  };
+
+  // Add form opens freely — password on Submit
   const handleAddSubmit = (e) => {
     e.preventDefault();
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       setError('Please enter a valid VO amount.');
       return;
     }
+    let finalStatus = statusSelect;
+    if (statusSelect === 'Other') {
+      if (!customStatusAdd.trim()) { setError('Please enter custom status.'); return; }
+      finalStatus = customStatusAdd.trim();
+    }
     setError('');
-
     const formattedDate = formatDateForDisplay(dateSubmitted);
-    const newVO = addVariationOrder(projectNo, {
+    const payload = {
       date_submitted: formattedDate,
       amount: parseFloat(amount),
       revised_amount: revisedAmount ? parseFloat(revisedAmount) : null,
       details: details.trim() || null,
-      status: status,
-    });
-
-    setVoList(prev => [...prev, newVO]);
-    setAmount('');
-    setRevisedAmount('');
-    setDetails('');
-    setStatus('Subject for BOR Approval');
-    setDateSubmitted(todayISO);
-    setShowAddForm(false);
-  };
-
-  const handleAddClick = () => {
+      status: finalStatus,
+    };
     if (isAuthorized()) {
-      setShowAddForm(true);
+      executeAddVO(addVariationOrder(projectNo, payload));
     } else {
-      setPendingAction(() => () => setShowAddForm(true));
+      setPendingAction(() => () => executeAddVO(addVariationOrder(projectNo, payload)));
       setShowAuthModal(true);
     }
   };
@@ -292,17 +358,15 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
         isOpen={showAuthModal}
         onClose={() => { setShowAuthModal(false); setPendingAction(null); }}
         onSuccess={() => { if (pendingAction) pendingAction(); }}
-        title="Unlock Variation Orders Editing"
-        description="Enter authorization password to modify variation orders."
+        title="Authorization Required to Save"
+        description="Enter authorization password to save this variation order."
       />
 
       <div className="card-header">
         <h3 className="card-title">Variation Orders ({voList.length})</h3>
+        {/* + Add VO opens freely */}
         {!showAddForm && (
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleAddClick}
-          >
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(true)}>
             + Add VO
           </button>
         )}
@@ -313,89 +377,51 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
           <div style={{ fontWeight: 700, marginBottom: 'var(--sp-3)', fontSize: 13, color: 'var(--navy)' }}>
             New Variation Order
           </div>
-
           <form onSubmit={handleAddSubmit}>
             {error && (
-              <div style={{ color: 'var(--red)', fontSize: 11, marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
-                {error}
-              </div>
+              <div style={{ color: 'var(--red)', fontSize: 11, marginBottom: 'var(--sp-2)', fontWeight: 600 }}>{error}</div>
             )}
-
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
               <div>
                 <label className="form-label" style={{ fontSize: 11 }}>Date Submitted</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={dateSubmitted}
-                  onChange={e => setDateSubmitted(e.target.value)}
-                />
+                <input type="date" className="form-input" value={dateSubmitted} onChange={e => setDateSubmitted(e.target.value)} />
               </div>
-
               <div>
                 <label className="form-label" style={{ fontSize: 11 }}>VO Amount (₱)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="e.g. 49026.70"
-                  className="form-input"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  required
-                />
+                <input type="number" step="0.01" min="0" placeholder="e.g. 49026.70" className="form-input"
+                  value={amount} onChange={e => setAmount(e.target.value)} required />
               </div>
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
               <div>
                 <label className="form-label" style={{ fontSize: 11 }}>Revised Contract Amount due to VO (₱)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="e.g. 9757458.24 (Optional)"
-                  className="form-input"
-                  value={revisedAmount}
-                  onChange={e => setRevisedAmount(e.target.value)}
-                />
+                <input type="number" step="0.01" min="0" placeholder="Optional" className="form-input"
+                  value={revisedAmount} onChange={e => setRevisedAmount(e.target.value)} />
               </div>
-
               <div>
                 <label className="form-label" style={{ fontSize: 11 }}>Status</label>
-                <select
-                  className="form-select"
-                  value={status}
-                  onChange={e => setStatus(e.target.value)}
-                >
+                <select className="form-select" value={statusSelect} onChange={e => setStatusSelect(e.target.value)}>
                   <option value="Approved">Approved</option>
                   <option value="Subject for BOR Approval">Subject for BOR Approval</option>
+                  <option value="Other">Other (Custom)</option>
                 </select>
+                {statusSelect === 'Other' && (
+                  <input type="text" className="form-input mt-2" placeholder="Enter custom status..."
+                    value={customStatusAdd} onChange={e => setCustomStatusAdd(e.target.value)} style={{ fontSize: 12 }} required />
+                )}
               </div>
             </div>
-
             <div style={{ marginBottom: 'var(--sp-3)' }}>
               <label className="form-label" style={{ fontSize: 11 }}>Details / Remarks (Optional)</label>
-              <textarea
-                className="form-textarea"
-                rows={2}
-                placeholder="Details of variation order..."
-                value={details}
-                onChange={e => setDetails(e.target.value)}
-              />
+              <textarea className="form-textarea" rows={2} placeholder="Details of variation order..."
+                value={details} onChange={e => setDetails(e.target.value)} />
             </div>
-
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => { setShowAddForm(false); setError(''); }}
-              >
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowAddForm(false); setError(''); }}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary btn-sm">
-                Save Variation Order
-              </button>
+              {/* Password checked here on submit */}
+              <button type="submit" className="btn btn-primary btn-sm">Save Variation Order</button>
             </div>
           </form>
         </div>
