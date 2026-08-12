@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Badge, { voStatusVariant, formatCurrency } from '../shared/Badge.jsx';
 import { addVariationOrder, deleteVariationOrder, updateVariationOrder } from '../../data/projectsRepo.js';
 import PasswordModal, { isAuthorized } from '../shared/PasswordModal.jsx';
@@ -13,22 +13,46 @@ function formatDateForDisplay(dateStr) {
   return dateStr;
 }
 
-/* ─── Single VO Card Item ─────────────────────────────────────── */
-function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
+/* ─── Single VO Card Item with Kebab Menu ─────────────────────── */
+function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [authTitle, setAuthTitle]         = useState('');
   const [authDesc, setAuthDesc]           = useState('');
 
+  // Dropdown menu state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Edit Amount / Details inline state
+  const [editing, setEditing]         = useState(false);
+  const [editAmount, setEditAmount]   = useState(vo.amount ?? '');
+  const [editRevised, setEditRevised] = useState(vo.revised_amount ?? '');
+  const [editDetails, setEditDetails] = useState(vo.details ?? '');
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
   const isApproved = vo.status === 'Approved';
   const nextStatus = isApproved ? 'Subject for BOR Approval' : 'Approved';
 
+  /* Actions */
   const doStatusChange = () => {
     const updated = updateVariationOrder(projectNo, vo.vo_id, { status: nextStatus });
     if (updated) onStatusChange(vo.vo_id, nextStatus);
   };
 
-  const handleStatusClick = () => {
+  const handleStatusMenuClick = () => {
+    setMenuOpen(false);
     if (isAuthorized()) {
       doStatusChange();
     } else {
@@ -39,13 +63,33 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
     }
   };
 
+  const doOpenEdit = () => {
+    setEditAmount(vo.amount ?? '');
+    setEditRevised(vo.revised_amount ?? '');
+    setEditDetails(vo.details ?? '');
+    setEditing(true);
+  };
+
+  const handleEditAmountMenuClick = () => {
+    setMenuOpen(false);
+    if (isAuthorized()) {
+      doOpenEdit();
+    } else {
+      setAuthTitle('Unlock VO Amount Editing');
+      setAuthDesc('Enter authorization password to edit this variation order.');
+      setPendingAction(() => doOpenEdit);
+      setShowAuthModal(true);
+    }
+  };
+
   const doDelete = () => {
     if (!window.confirm('Are you sure you want to delete this variation order?')) return;
     deleteVariationOrder(projectNo, vo.vo_id);
     onDelete(vo.vo_id);
   };
 
-  const handleDeleteClick = () => {
+  const handleDeleteMenuClick = () => {
+    setMenuOpen(false);
     if (isAuthorized()) {
       doDelete();
     } else {
@@ -54,6 +98,22 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
       setPendingAction(() => doDelete);
       setShowAuthModal(true);
     }
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    const parsedAmt = parseFloat(editAmount);
+    if (isNaN(parsedAmt) || parsedAmt <= 0) return;
+
+    const patch = {
+      amount: parsedAmt,
+      revised_amount: editRevised ? parseFloat(editRevised) : null,
+      details: editDetails.trim() || null,
+    };
+
+    const updated = updateVariationOrder(projectNo, vo.vo_id, patch);
+    if (onUpdateVO) onUpdateVO(vo.vo_id, patch);
+    setEditing(false);
   };
 
   return (
@@ -67,8 +127,8 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-3)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>
               Variation Order #{vo.vo_number}
             </span>
@@ -90,37 +150,85 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange }) {
           )}
         </div>
 
-        <button
-          onClick={handleDeleteClick}
-          title="Delete Variation Order"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 16,
-            color: 'var(--red)',
-            padding: '2px 6px',
-            borderRadius: 4,
-            lineHeight: 1,
-          }}
-        >
-          ✕
-        </button>
+        {/* Kebab (⋮) Dropdown Menu */}
+        <div className="kebab-wrap" ref={menuRef}>
+          <button
+            className={`kebab-btn${menuOpen ? ' active' : ''}`}
+            onClick={() => setMenuOpen(v => !v)}
+            title="Actions"
+          >
+            ⋮
+          </button>
+
+          {menuOpen && (
+            <div className="kebab-dropdown">
+              <button className="kebab-item" onClick={handleStatusMenuClick}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Change Status</span>
+              </button>
+
+              <button className="kebab-item" onClick={handleEditAmountMenuClick}>
+                <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-mono)', width: 14, textAlign: 'center', display: 'inline-block', lineHeight: 1 }}>₱</span>
+                <span>Edit Amount</span>
+              </button>
+
+              <div className="kebab-divider" />
+
+              <button className="kebab-item danger" onClick={handleDeleteMenuClick}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Delete</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {vo.status && (
-        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, pt: 8, borderTop: '1px solid var(--border)' }}>
-          <span onClick={handleStatusClick} style={{ cursor: 'pointer' }}>
-            <Badge variant={voStatusVariant(vo.status)}>{vo.status}</Badge>
-          </span>
+      {/* Inline Edit Form for Amount / Details */}
+      {editing && (
+        <form onSubmit={handleSaveEdit} style={{ marginTop: 12, padding: 12, background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
+          <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: 'var(--navy)' }}>Edit Variation Order #{vo.vo_number}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+            <div>
+              <label className="form-label" style={{ fontSize: 10 }}>VO Amount (₱)</label>
+              <input
+                type="number" step="0.01" min="0"
+                className="form-input" style={{ fontSize: 12 }}
+                value={editAmount} onChange={e => setEditAmount(e.target.value)} required
+              />
+            </div>
+            <div>
+              <label className="form-label" style={{ fontSize: 10 }}>Revised Contract Amount (₱)</label>
+              <input
+                type="number" step="0.01" min="0"
+                className="form-input" style={{ fontSize: 12 }}
+                value={editRevised} onChange={e => setEditRevised(e.target.value)}
+              />
+            </div>
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <label className="form-label" style={{ fontSize: 10 }}>Details / Remarks</label>
+            <input
+              type="text" className="form-input" style={{ fontSize: 12 }}
+              value={editDetails} onChange={e => setEditDetails(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+            <button type="button" className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary btn-xs">Save Changes</button>
+          </div>
+        </form>
+      )}
 
-          <button
-            className="btn-outline-pill"
-            onClick={handleStatusClick}
-            style={{ padding: '2px 8px', fontSize: 10 }}
-          >
-            ⇄ Change
-          </button>
+      {/* Bottom Status Chip (no separate change button!) */}
+      {vo.status && !editing && (
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', pt: 8 }}>
+          <Badge variant={voStatusVariant(vo.status)}>{vo.status}</Badge>
         </div>
       )}
     </div>
@@ -305,6 +413,9 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
               onDelete={(voId) => setVoList(prev => prev.filter(v => v.vo_id !== voId))}
               onStatusChange={(voId, newStatus) =>
                 setVoList(prev => prev.map(v => v.vo_id === voId ? { ...v, status: newStatus } : v))
+              }
+              onUpdateVO={(voId, patch) =>
+                setVoList(prev => prev.map(v => v.vo_id === voId ? { ...v, ...patch } : v))
               }
             />
           ))}
