@@ -1,0 +1,169 @@
+// AddProjectForm.jsx — Modal form to create local project
+import { useState } from 'react';
+import { addProject } from '../../data/projectsRepo.js';
+
+export default function AddProjectForm({ onClose, onSaved }) {
+  const [formData, setFormData] = useState({
+    project_name: '',
+    project_id_code: '',
+    category: 'On-going',
+    contractor_name: '',
+    original_contract_amount: '',
+    original_completion_date: '',
+    new_completion_date: '',
+    general_remarks: '',
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.project_name.trim()) return;
+
+    setSubmitting(true);
+    try {
+      await addProject({
+        project_name: formData.project_name.trim(),
+        project_id_code: formData.project_id_code.trim() || null,
+        category: formData.category,
+        contractor_names: formData.contractor_name.trim() ? [formData.contractor_name.trim()] : [],
+        original_contract_amount: formData.original_contract_amount ? parseFloat(formData.original_contract_amount) : null,
+        original_completion_date: formData.original_completion_date || null,
+        new_completion_date: formData.new_completion_date || null,
+        general_remarks: formData.general_remarks.trim() || null,
+      });
+      onSaved();
+    } catch (err) {
+      alert(`Failed to add project: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">Add New Project</h2>
+          <button className="btn btn-ghost btn-xs" onClick={onClose}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Project Name *</label>
+            <input
+              type="text"
+              name="project_name"
+              className="form-input"
+              required
+              placeholder="e.g. Construction of Solar Farm Phase I"
+              value={formData.project_name}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Project ID Code</label>
+              <input
+                type="text"
+                name="project_id_code"
+                className="form-input"
+                placeholder="e.g. 25CSU06"
+                value={formData.project_id_code}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Category</label>
+              <select
+                name="category"
+                className="form-select"
+                value={formData.category}
+                onChange={handleChange}
+              >
+                <option value="On-going">On-going</option>
+                <option value="Proposed">Proposed</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Awarded Contractor</label>
+              <input
+                type="text"
+                name="contractor_name"
+                className="form-input"
+                placeholder="e.g. Acme Builders Inc."
+                value={formData.contractor_name}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Contract Amount (PHP)</label>
+              <input
+                type="number"
+                step="0.01"
+                name="original_contract_amount"
+                className="form-input"
+                placeholder="e.g. 15000000"
+                value={formData.original_contract_amount}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Original Completion Date</label>
+              <input
+                type="date"
+                name="original_completion_date"
+                className="form-input"
+                value={formData.original_completion_date}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">New Completion Date</label>
+              <input
+                type="date"
+                name="new_completion_date"
+                className="form-input"
+                value={formData.new_completion_date}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Remarks / Notes</label>
+            <textarea
+              name="general_remarks"
+              className="form-textarea"
+              placeholder="Any initial remarks or scope notes..."
+              value={formData.general_remarks}
+              onChange={handleChange}
+              rows={3}
+            />
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={submitting}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={submitting || !formData.project_name.trim()}>
+              {submitting ? 'Saving...' : 'Save Project'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
