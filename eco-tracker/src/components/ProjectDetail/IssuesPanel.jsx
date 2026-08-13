@@ -27,23 +27,31 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
   const [newName, setNewName]           = useState('');
   const [newTitle, setNewTitle]         = useState('');
 
-  const loadPersonnel = useCallback(() => {
-    const list = getPersonnel();
-    setPersonnel(list);
-    if (list.length > 0) setSelectedId(id => id || list[0].personnel_id);
+  const loadPersonnel = useCallback(async () => {
+    try {
+      const list = await getPersonnel();
+      setPersonnel(list);
+      if (list.length > 0) setSelectedId(id => id || list[0].personnel_id);
+    } catch (e) {
+      console.error('loadPersonnel error:', e.message);
+    }
   }, []);
 
   useEffect(() => { loadPersonnel(); }, [loadPersonnel]);
 
   const selectedPerson = personnel.find(p => p.personnel_id === selectedId);
 
-  function handleAddPerson(e) {
+  async function handleAddPerson(e) {
     e.preventDefault();
     if (!newName.trim()) return;
-    const created = addPersonnel({ name: newName.trim(), title: newTitle.trim() });
-    setNewName(''); setNewTitle(''); setAddingPerson(false);
-    loadPersonnel();
-    setSelectedId(created.personnel_id);
+    try {
+      const created = await addPersonnel({ name: newName.trim(), title: newTitle.trim() });
+      setNewName(''); setNewTitle(''); setAddingPerson(false);
+      await loadPersonnel();
+      if (created) setSelectedId(created.personnel_id);
+    } catch (err) {
+      console.error('addPersonnel error:', err.message);
+    }
   }
 
   function handleSubmit(e) {
@@ -186,9 +194,13 @@ function IssueCommentThread({ projectNo, issueId }) {
   const [comments, setComments] = useState([]);
   const [open, setOpen]         = useState(false);
 
-  const reload = useCallback(() => {
-    const all = getComments(projectNo);
-    setComments(all.filter(c => c.target_field === issueId));
+  const reload = useCallback(async () => {
+    try {
+      const all = await getComments(projectNo);
+      setComments(all.filter(c => c.target_field === issueId));
+    } catch (e) {
+      console.error('Failed to load issue comments:', e.message);
+    }
   }, [projectNo, issueId]);
 
   useEffect(() => { reload(); }, [reload]);
@@ -226,8 +238,8 @@ function IssueCommentThread({ projectNo, issueId }) {
           ) : (
             <p className="text-xs text-muted" style={{ marginBottom: 8 }}>No comments yet. Be the first to comment.</p>
           )}
-          <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={({ personnelId, commenterName, text }) => {
-            addComment({ projectNo, personnelId, commenterName, text, targetField: issueId });
+          <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={async ({ personnelId, commenterName, text }) => {
+            await addComment({ projectNo, personnelId, commenterName, text, targetField: issueId });
             reload();
           }} />
         </div>
@@ -278,23 +290,23 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
   }
 
   /* Execute actions (called after auth) */
-  function executeStatusToggle() {
+  async function executeStatusToggle() {
     const nextStatus = isResolved ? 'On-going' : 'Resolved';
-    updateIssue(projectNo, issue.issue_id, { status: nextStatus });
+    await updateIssue(projectNo, issue.issue_id, { status: nextStatus });
     onChanged(issue.issue_id, { status: nextStatus });
     setPendingAction(null);
   }
 
-  function executeSaveEdit() {
+  async function executeSaveEdit() {
     if (!draft.trim()) return;
-    updateIssue(projectNo, issue.issue_id, { description: draft.trim(), status: draftStatus });
+    await updateIssue(projectNo, issue.issue_id, { description: draft.trim(), status: draftStatus });
     onChanged(issue.issue_id, { description: draft.trim(), status: draftStatus });
     setEditing(false);
     setPendingAction(null);
   }
 
-  function executeDelete() {
-    deleteIssue(projectNo, issue.issue_id);
+  async function executeDelete() {
+    await deleteIssue(projectNo, issue.issue_id);
     onDeleted(issue.issue_id);
     setPendingAction(null);
   }
@@ -480,10 +492,16 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
     setIssuesList(prev => prev.filter(item => item.issue_id !== issueId));
   }
 
-  function executeAddItem() {
+  async function executeAddItem() {
     if (!newItemText.trim()) return;
-    const created = addIssue(projectNo, newItemText.trim());
-    setIssuesList(prev => [...prev, created]);
+    try {
+      await addIssue(projectNo, newItemText.trim());
+      // Optimistically add with temp id; will be correct on next full reload
+      const tempIssue = { issue_id: `temp-${Date.now()}`, project_no: projectNo, description: newItemText.trim(), status: 'Open' };
+      setIssuesList(prev => [...prev, tempIssue]);
+    } catch (e) {
+      console.error('Failed to add issue:', e.message);
+    }
     setNewItemText('');
     setShowAddForm(false);
     setPendingAction(null);

@@ -88,13 +88,24 @@ export default function ProgressPanel({ projectNo, progressUpdates: initialUpdat
     setEditing(true);
   };
 
-  const executeSave = (actualVal, targetVal, formattedDate) => {
-    const updated = updateProgress(projectNo, {
-      actual_percent: actualVal,
-      target_percent: targetVal,
-      as_of_date: formattedDate || null,
-    });
-    setPuList(prev => [...prev, updated]);
+  const executeSave = async (actualVal, targetVal, formattedDate) => {
+    try {
+      await updateProgress(projectNo, {
+        actual_percent: actualVal,
+        target_percent: targetVal,
+        as_of_date: formattedDate || null,
+        slippage_percent: actualVal - targetVal,
+      });
+      const updated = {
+        actual_percent: actualVal,
+        target_percent: targetVal,
+        slippage_percent: actualVal - targetVal,
+        as_of_date: formattedDate || null,
+      };
+      setPuList(prev => [updated, ...prev]);
+    } catch (e) {
+      console.error('Failed to save progress:', e.message);
+    }
     setEditing(false);
     setPendingSave(null);
   };
