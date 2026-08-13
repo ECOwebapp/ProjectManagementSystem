@@ -4,6 +4,7 @@ import { getProjects, deleteProject } from '../../data/projectsRepo.js';
 import FilterBar from '../shared/FilterBar.jsx';
 import Badge, { categoryVariant, formatCurrency } from '../shared/Badge.jsx';
 import AddProjectForm from '../Forms/AddProjectForm.jsx';
+import PasswordModal, { isAuthorized } from '../shared/PasswordModal.jsx';
 
 function isInternalContractor(name = '') {
   const lower = name.toLowerCase();
@@ -91,8 +92,10 @@ export default function ProjectList({ onSelectProject }) {
   const [editingProject, setEditingProject] = useState(null);
   const [deletingProject, setDeletingProject] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
-  const handleDelete = async () => {
+  const executeDelete = async () => {
     if (!deletingProject) return;
     setDeleting(true);
     try {
@@ -103,6 +106,17 @@ export default function ProjectList({ onSelectProject }) {
       alert(`Failed to delete project: ${e.message}`);
     } finally {
       setDeleting(false);
+      setPendingDelete(null);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!deletingProject) return;
+    if (isAuthorized()) {
+      executeDelete();
+    } else {
+      setPendingDelete(() => executeDelete);
+      setShowAuthModal(true);
     }
   };
 
@@ -264,37 +278,28 @@ export default function ProjectList({ onSelectProject }) {
                     <td className="text-sm text-muted" style={{ whiteSpace: 'nowrap' }}>
                       {completionDate ? completionDate : <span className="text-pending">TBD</span>}
                     </td>
-                    <td onClick={(e) => e.stopPropagation()} style={{ width: 90 }}>
-                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                    <td onClick={(e) => e.stopPropagation()} style={{ width: 84 }}>
+                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                          <button
                            title="Edit project"
-                           className="btn btn-ghost btn-xs"
-                           style={{
-                             color: 'var(--blue)',
-                             borderColor: 'transparent',
-                             background: 'var(--blue-light)',
-                             padding: '4px 6px',
-                             borderRadius: '6px',
-                             lineHeight: 1,
-                           }}
+                           className="action-btn action-btn-edit"
                            onClick={() => setEditingProject(p)}
                          >
-                           <span className="mdi mdi-pencil-circle-outline" style={{ fontSize: 20, display: 'block' }} />
+                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                             <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                           </svg>
                          </button>
                          <button
                            title="Delete project"
-                           className="btn btn-ghost btn-xs"
-                           style={{
-                             color: 'var(--red)',
-                             borderColor: 'transparent',
-                             background: 'var(--red-light)',
-                             padding: '4px 6px',
-                             borderRadius: '6px',
-                             lineHeight: 1,
-                           }}
+                           className="action-btn action-btn-delete"
                            onClick={() => setDeletingProject(p)}
                          >
-                           <span className="mdi mdi-delete-circle-outline" style={{ fontSize: 20, display: 'block' }} />
+                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                             <polyline points="3 6 5 6 21 6" />
+                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                             <line x1="10" y1="11" x2="10" y2="17" />
+                             <line x1="14" y1="11" x2="14" y2="17" />
+                           </svg>
                          </button>
                        </div>
                      </td>
@@ -323,6 +328,13 @@ export default function ProjectList({ onSelectProject }) {
 
       {deletingProject && (
         <div className="modal-overlay" onClick={() => setDeletingProject(null)}>
+          <PasswordModal
+            isOpen={showAuthModal}
+            onClose={() => { setShowAuthModal(false); setPendingDelete(null); }}
+            onSuccess={() => { if (pendingDelete) pendingDelete(); }}
+            title="Authorization Required to Delete"
+            description="Enter authorization password to delete this project."
+          />
           <div className="add-project-modal" style={{ maxWidth: 450, padding: 24 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center' }}>
               <div style={{

@@ -20,8 +20,28 @@ export default function App() {
 
         <div className="header-right">
           {selectedProjectNo && (
-            <button className="btn-nav-pill" onClick={() => setSelectedProjectNo(null)}>
-              ← All Projects
+            <button
+              onClick={() => setSelectedProjectNo(null)}
+              title="Back to All Projects"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: '#FFFFFF',
+                color: 'var(--navy, #0B1E3D)',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 38,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.35)'; }}
+              onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)'; }}
+            >
+              <span className="mdi mdi-home-circle" />
             </button>
           )}
         </div>

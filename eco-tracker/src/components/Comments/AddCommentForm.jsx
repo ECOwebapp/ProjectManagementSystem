@@ -1,7 +1,8 @@
-// AddCommentForm.jsx — Form for adding comments / replies with personnel selector & inline add
-import { useState, useEffect } from 'react';
+// AddCommentForm.jsx — Form for adding comments / replies with personnel selector & inline add & photo attachment
+import { useState, useEffect, useRef } from 'react';
 import { getPersonnel, addPersonnel } from '../../data/projectsRepo.js';
 import Avatar from '../shared/Avatar.jsx';
+import { compressAndConvertToBase64 } from '../../utils/imageUtils.js';
 
 export default function AddCommentForm({
   onSubmit,
@@ -13,9 +14,13 @@ export default function AddCommentForm({
   const [personnelList, setPersonnelList] = useState([]);
   const [selectedPersonnelId, setSelectedPersonnelId] = useState('');
   const [text, setText] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [showAddInline, setShowAddInline] = useState(false);
   const [newPersonName, setNewPersonName] = useState('');
   const [newPersonTitle, setNewPersonTitle] = useState('');
+
+  const fileInputRef = useRef(null);
 
   const loadPersonnel = async () => {
     try {
@@ -35,6 +40,21 @@ export default function AddCommentForm({
 
   const selectedPerson = personnelList.find(p => p.personnel_id === selectedPersonnelId);
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const base64 = await compressAndConvertToBase64(file);
+      setImageUrl(base64);
+    } catch (err) {
+      alert(`Failed to process image: ${err.message}`);
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!text.trim() || !selectedPerson) return;
@@ -42,8 +62,10 @@ export default function AddCommentForm({
       personnelId: selectedPerson.personnel_id,
       commenterName: selectedPerson.name,
       text: text.trim(),
+      imageUrl: imageUrl || null,
     });
     setText('');
+    setImageUrl('');
     if (onCancel) onCancel();
   };
 
@@ -139,23 +161,97 @@ export default function AddCommentForm({
           />
         </div>
 
-        {/* Right-aligned Submit Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
-          {onCancel && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
-              Cancel
+        {/* Image Attachment Preview */}
+        {imageUrl && (
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: 'var(--sp-3)' }}>
+            <img
+              src={imageUrl}
+              alt="Attached preview"
+              style={{ maxHeight: 120, borderRadius: 'var(--r-md)', border: '1px solid var(--border)', objectFit: 'cover' }}
+            />
+            <button
+              type="button"
+              onClick={() => setImageUrl('')}
+              style={{
+                position: 'absolute',
+                top: -6,
+                right: -6,
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: 'var(--red)',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }}
+              title="Remove photo"
+            >
+              ✕
             </button>
-          )}
+          </div>
+        )}
+
+        {/* Hidden File Input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+
+        {/* Action Toolbar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button
-            type="submit"
-            className="btn btn-primary btn-sm"
-            disabled={!text.trim() || !selectedPerson}
-            style={{ boxShadow: '0 1px 2px rgba(36, 81, 184, 0.2)', fontWeight: 600 }}
+            type="button"
+            className="btn btn-ghost btn-xs"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              color: 'var(--blue)',
+              border: '1px solid var(--border)',
+              background: '#FFFFFF',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontWeight: 500,
+              fontSize: 12,
+              cursor: 'pointer'
+            }}
           >
-            {buttonText}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span>{uploadingImage ? 'Processing…' : (imageUrl ? 'Change Photo' : 'Attach Photo')}</span>
           </button>
+
+          <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+            {onCancel && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={!text.trim() || !selectedPerson || uploadingImage}
+              style={{ boxShadow: '0 1px 2px rgba(36, 81, 184, 0.2)', fontWeight: 600 }}
+            >
+              {buttonText}
+            </button>
+          </div>
         </div>
       </form>
     </div>
   );
 }
+
