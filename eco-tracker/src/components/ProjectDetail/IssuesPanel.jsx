@@ -1,4 +1,4 @@
-// IssuesPanel.jsx – Editable Issues, Concerns & Remarks panel
+// IssuesPanel.jsx – Editable Issues, Concerns & Remarks panel with photo attachment support & Lightbox
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Badge from '../shared/Badge.jsx';
 import Avatar from '../shared/Avatar.jsx';
@@ -8,6 +8,7 @@ import {
   getComments, addComment, addReply, resolveComment,
   getPersonnel, addPersonnel,
 } from '../../data/projectsRepo.js';
+import { compressAndConvertToBase64 } from '../../utils/imageUtils.js';
 
 /* ─── Helpers ─────────────────────────────────────────────────── */
 function formatTs(iso) {
@@ -18,14 +19,75 @@ function formatTs(iso) {
   });
 }
 
+/* ─── Lightbox Modal for viewing photos ───────────────────────── */
+function ImageLightbox({ src, onClose }) {
+  if (!src) return null;
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(11, 30, 61, 0.85)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        cursor: 'zoom-out',
+      }}
+    >
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+        <img
+          src={src}
+          alt="Enlarged view"
+          style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', objectFit: 'contain' }}
+        />
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: -12,
+            right: -12,
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: '#FFFFFF',
+            color: 'var(--navy)',
+            border: 'none',
+            fontSize: 16,
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="Close photo"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Mini personnel picker + comment form ───────────────────── */
 function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = false }) {
   const [personnel, setPersonnel]       = useState([]);
   const [selectedId, setSelectedId]     = useState('');
   const [text, setText]                 = useState('');
+  const [imageUrl, setImageUrl]         = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [addingPerson, setAddingPerson] = useState(false);
   const [newName, setNewName]           = useState('');
   const [newTitle, setNewTitle]         = useState('');
+
+  const fileInputRef = useRef(null);
 
   const loadPersonnel = useCallback(async () => {
     try {
@@ -40,6 +102,21 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
   useEffect(() => { loadPersonnel(); }, [loadPersonnel]);
 
   const selectedPerson = personnel.find(p => p.personnel_id === selectedId);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const base64 = await compressAndConvertToBase64(file);
+      setImageUrl(base64);
+    } catch (err) {
+      alert(`Failed to process image: ${err.message}`);
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   async function handleAddPerson(e) {
     e.preventDefault();
@@ -57,8 +134,9 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
   function handleSubmit(e) {
     e.preventDefault();
     if (!text.trim() || !selectedPerson) return;
-    onSubmit({ personnelId: selectedPerson.personnel_id, commenterName: selectedPerson.name, text: text.trim() });
+    onSubmit({ personnelId: selectedPerson.personnel_id, commenterName: selectedPerson.name, text: text.trim(), imageUrl: imageUrl || null });
     setText('');
+    setImageUrl('');
     if (onCancel) onCancel();
   }
 
@@ -93,13 +171,59 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
         <textarea className="form-textarea" rows={2} value={text} onChange={e => setText(e.target.value)}
           placeholder={isReply ? 'Write a reply…' : 'Add a comment on this item…'}
           style={{ fontSize: 12, marginBottom: 'var(--sp-2)' }} />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--sp-2)' }}>
-          {onCancel && (
-            <button type="button" className="btn btn-ghost btn-xs" onClick={onCancel}>Cancel</button>
-          )}
-          <button type="submit" className="btn btn-primary btn-xs" disabled={!text.trim() || !selectedPerson}>
-            {isReply ? 'Reply' : 'Comment'}
+
+        {imageUrl && (
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: 'var(--sp-2)' }}>
+            <img src={imageUrl} alt="Attached preview" style={{ maxHeight: 100, borderRadius: 'var(--r-md)', border: '1px solid var(--border)', objectFit: 'cover' }} />
+            <button
+              type="button"
+              onClick={() => setImageUrl('')}
+              style={{
+                position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%',
+                background: 'var(--red)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >✕</button>
+          </div>
+        )}
+
+        <input type="file" ref={fileInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              color: 'var(--blue)',
+              border: '1px solid var(--border)',
+              background: '#FFFFFF',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontWeight: 500,
+              fontSize: 12,
+              cursor: 'pointer'
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span>{uploadingImage ? 'Processing…' : (imageUrl ? 'Change Photo' : 'Attach Photo')}</span>
           </button>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+            {onCancel && (
+              <button type="button" className="btn btn-ghost btn-xs" onClick={onCancel}>Cancel</button>
+            )}
+            <button type="submit" className="btn btn-primary btn-xs" disabled={!text.trim() || !selectedPerson || uploadingImage}>
+              {isReply ? 'Reply' : 'Comment'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -107,13 +231,13 @@ function IssueCommentForm({ projectNo, issueId, onSubmit, onCancel, isReply = fa
 }
 
 /* ─── Single comment bubble ───────────────────────────────────── */
-function IssueCommentItem({ comment, replies, projectNo, onReload }) {
+function IssueCommentItem({ comment, replies, projectNo, onReload, onOpenImage }) {
   const [showReply, setShowReply]         = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const isResolved = comment.is_resolved;
 
-  function handleReply({ personnelId, commenterName, text }) {
-    addReply({ projectNo, personnelId, commenterName, text, parentCommentId: comment.comment_id });
+  function handleReply({ personnelId, commenterName, text, imageUrl }) {
+    addReply({ projectNo, personnelId, commenterName, text, parentCommentId: comment.comment_id, imageUrl });
     setShowReply(false);
     onReload();
   }
@@ -152,6 +276,16 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
             )}
           </div>
           <div style={{ fontSize: 12, color: 'var(--navy)', lineHeight: 1.5 }}>{comment.comment_text}</div>
+          {comment.image_url && (
+            <div style={{ marginTop: 6 }}>
+              <img
+                src={comment.image_url}
+                alt="Attached photo"
+                onClick={() => onOpenImage(comment.image_url)}
+                style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', cursor: 'pointer', objectFit: 'cover' }}
+              />
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
             <button onClick={() => setShowReply(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--blue)' }}>Reply</button>
             <button onClick={handleResolveClick} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: isResolved ? 'var(--green)' : 'var(--gray)' }}>
@@ -171,6 +305,16 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
                     <span style={{ fontSize: 10, color: 'var(--gray)' }}>{formatTs(rep.commented_at)}</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--navy)' }}>{rep.comment_text}</div>
+                  {rep.image_url && (
+                    <div style={{ marginTop: 4 }}>
+                      <img
+                        src={rep.image_url}
+                        alt="Attached photo"
+                        onClick={() => onOpenImage(rep.image_url)}
+                        style={{ maxHeight: 100, maxWidth: '100%', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', cursor: 'pointer', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -190,7 +334,7 @@ function IssueCommentItem({ comment, replies, projectNo, onReload }) {
 }
 
 /* ─── Per-issue comment thread ────────────────────────────────── */
-function IssueCommentThread({ projectNo, issueId }) {
+function IssueCommentThread({ projectNo, issueId, onOpenImage }) {
   const [comments, setComments] = useState([]);
   const [open, setOpen]         = useState(false);
 
@@ -232,14 +376,14 @@ function IssueCommentThread({ projectNo, issueId }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
               {topLevel.map(c => (
                 <IssueCommentItem key={c.comment_id} comment={c}
-                  replies={replyMap[c.comment_id] || []} projectNo={projectNo} onReload={reload} />
+                  replies={replyMap[c.comment_id] || []} projectNo={projectNo} onReload={reload} onOpenImage={onOpenImage} />
               ))}
             </div>
           ) : (
             <p className="text-xs text-muted" style={{ marginBottom: 8 }}>No comments yet. Be the first to comment.</p>
           )}
-          <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={async ({ personnelId, commenterName, text }) => {
-            await addComment({ projectNo, personnelId, commenterName, text, targetField: issueId });
+          <IssueCommentForm projectNo={projectNo} issueId={issueId} onSubmit={async ({ personnelId, commenterName, text, imageUrl }) => {
+            await addComment({ projectNo, personnelId, commenterName, text, targetField: issueId, imageUrl });
             reload();
           }} />
         </div>
@@ -249,12 +393,16 @@ function IssueCommentThread({ projectNo, issueId }) {
 }
 
 /* ─── Issue Row with password-on-save ────────────────────────── */
-function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
+function IssueRow({ issue, index, projectNo, onChanged, onDeleted, onOpenImage }) {
   const [editing, setEditing]           = useState(false);
   const [draft, setDraft]               = useState(issue.description || '');
   const [draftStatus, setDraftStatus]   = useState(
     (issue.status === 'Resolved' || issue.status === 'Closed') ? 'Resolved' : 'On-going'
   );
+  const [draftImageUrl, setDraftImageUrl] = useState(issue.image_url || '');
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const fileInputRef = useRef(null);
 
   // Kebab menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -281,10 +429,26 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const base64 = await compressAndConvertToBase64(file);
+      setDraftImageUrl(base64);
+    } catch (err) {
+      alert(`Failed to process image: ${err.message}`);
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   /* Opens freely — no password yet */
   function openEdit() {
     setDraft(issue.description || '');
     setDraftStatus(currentStatus);
+    setDraftImageUrl(issue.image_url || '');
     setEditing(true);
     setMenuOpen(false);
   }
@@ -299,8 +463,9 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
   async function executeSaveEdit() {
     if (!draft.trim()) return;
-    await updateIssue(projectNo, issue.issue_id, { description: draft.trim(), status: draftStatus });
-    onChanged(issue.issue_id, { description: draft.trim(), status: draftStatus });
+    const patch = { description: draft.trim(), status: draftStatus, image_url: draftImageUrl || null };
+    await updateIssue(projectNo, issue.issue_id, patch);
+    onChanged(issue.issue_id, patch);
     setEditing(false);
     setPendingAction(null);
   }
@@ -315,7 +480,6 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
   function handleStatusMenuClick() {
     setMenuOpen(false);
     const nextStatus = isResolved ? 'On-going' : 'Resolved';
-    // Status toggle is immediate — require password at this point since no form
     if (isAuthorized()) {
       executeStatusToggle();
     } else {
@@ -357,6 +521,7 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
     if (e.key === 'Escape') {
       setDraft(issue.description || '');
       setDraftStatus(currentStatus);
+      setDraftImageUrl(issue.image_url || '');
       setEditing(false);
     }
   }
@@ -390,16 +555,14 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
             {menuOpen && (
               <div className="kebab-dropdown">
-                {/* Status toggle — immediate, password here */}
                 <button className="kebab-item" onClick={handleStatusMenuClick}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 2 2h14a2 2 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
                   <span>Change Status</span>
                 </button>
 
-                {/* Edit opens freely — password only on Save */}
                 <button className="kebab-item" onClick={openEdit}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9"></path>
@@ -410,7 +573,6 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
 
                 <div className="kebab-divider" />
 
-                {/* Delete — password required after confirm */}
                 <button className="kebab-item danger" onClick={handleDeleteMenuClick}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -434,34 +596,103 @@ function IssueRow({ issue, index, projectNo, onChanged, onDeleted }) {
             rows={2} className="form-textarea"
             placeholder="Describe the issue…"
           />
+
+          {draftImageUrl && (
+            <div style={{ position: 'relative', display: 'inline-block', marginTop: 8 }}>
+              <img src={draftImageUrl} alt="Attached preview" style={{ maxHeight: 120, borderRadius: 'var(--r-md)', border: '1px solid var(--border)', objectFit: 'cover' }} />
+              <button
+                type="button"
+                onClick={() => setDraftImageUrl('')}
+                style={{
+                  position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%',
+                  background: 'var(--red)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >✕</button>
+            </div>
+          )}
+
+          <input type="file" ref={fileInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <label style={{ fontSize: 11, color: 'var(--navy)', fontWeight: 600 }}>Status:</label>
-              <select className="form-select" value={draftStatus} onChange={e => setDraftStatus(e.target.value)}
-                style={{ padding: '2px 8px', fontSize: 11 }}>
-                <option value="On-going">On-going</option>
-                <option value="Resolved">Resolved</option>
-              </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: 'var(--blue)',
+                  border: '1px solid var(--border)',
+                  background: '#FFFFFF',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  fontSize: 12,
+                  cursor: 'pointer'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span>{uploadingImage ? 'Processing…' : (draftImageUrl ? 'Change Photo' : 'Attach Photo')}</span>
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ fontSize: 11, color: 'var(--navy)', fontWeight: 600 }}>Status:</label>
+                <select className="form-select" value={draftStatus} onChange={e => setDraftStatus(e.target.value)}
+                  style={{ padding: '2px 8px', fontSize: 11 }}>
+                  <option value="On-going">On-going</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button className="btn btn-ghost btn-xs" onClick={() => setEditing(false)}>Cancel</button>
-              {/* Password required on Save */}
-              <button className="btn btn-primary btn-xs" onClick={handleSaveEdit} disabled={!draft.trim()}>Save</button>
+              <button className="btn btn-primary btn-xs" onClick={handleSaveEdit} disabled={!draft.trim() || uploadingImage}>Save</button>
             </div>
           </div>
         </div>
       ) : (
-        <div
-          style={{ fontSize: 13, color: isResolved ? 'var(--gray)' : 'var(--navy)',
-            textDecoration: isResolved ? 'line-through' : 'none', cursor: 'pointer', lineHeight: 1.5 }}
-          onClick={openEdit}
-          title="Click to edit"
-        >
-          {issue.description || <span className="text-muted">No description — click to add</span>}
+        <div>
+          <div
+            style={{ fontSize: 13, color: isResolved ? 'var(--gray)' : 'var(--navy)',
+              textDecoration: isResolved ? 'line-through' : 'none', cursor: 'pointer', lineHeight: 1.5 }}
+            onClick={openEdit}
+            title="Click to edit"
+          >
+            {issue.description || <span className="text-muted">No description — click to add</span>}
+          </div>
+
+          {issue.image_url && (
+            <div style={{ marginTop: 8 }}>
+              <img
+                src={issue.image_url}
+                alt="Attached photo"
+                onClick={() => onOpenImage(issue.image_url)}
+                style={{
+                  maxHeight: 180,
+                  maxWidth: '100%',
+                  borderRadius: 'var(--r-md)',
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  objectFit: 'cover',
+                  transition: 'transform 0.15s ease',
+                }}
+                onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseOut={e => e.currentTarget.style.transform = 'scale(1.0)'}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      <IssueCommentThread projectNo={projectNo} issueId={issue.issue_id} />
+      <IssueCommentThread projectNo={projectNo} issueId={issue.issue_id} onOpenImage={onOpenImage} />
     </div>
   );
 }
@@ -474,6 +705,11 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
   const [remarksDraft, setRemarksDraft]   = useState(remarks);
   const [showAddForm, setShowAddForm]     = useState(false);
   const [newItemText, setNewItemText]     = useState('');
+  const [newItemImage, setNewItemImage]   = useState('');
+  const [uploadingItemImage, setUploadingItemImage] = useState(false);
+  const [activeLightboxSrc, setActiveLightboxSrc]   = useState(null);
+
+  const addItemFileInputRef = useRef(null);
 
   // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -483,6 +719,21 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
 
   useEffect(() => { setIssuesList(initialIssues); }, [initialIssues]);
   useEffect(() => { setRemarks(generalRemarks || ''); }, [generalRemarks]);
+
+  const handleAddItemFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingItemImage(true);
+    try {
+      const base64 = await compressAndConvertToBase64(file);
+      setNewItemImage(base64);
+    } catch (err) {
+      alert(`Failed to process image: ${err.message}`);
+    } finally {
+      setUploadingItemImage(false);
+      if (addItemFileInputRef.current) addItemFileInputRef.current.value = '';
+    }
+  };
 
   function handleItemChanged(issueId, patch) {
     setIssuesList(prev => prev.map(item => item.issue_id === issueId ? { ...item, ...patch } : item));
@@ -495,14 +746,20 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
   async function executeAddItem() {
     if (!newItemText.trim()) return;
     try {
-      await addIssue(projectNo, newItemText.trim());
-      // Optimistically add with temp id; will be correct on next full reload
-      const tempIssue = { issue_id: `temp-${Date.now()}`, project_no: projectNo, description: newItemText.trim(), status: 'Open' };
+      await addIssue(projectNo, newItemText.trim(), 'Open', newItemImage || null);
+      const tempIssue = {
+        issue_id: `temp-${Date.now()}`,
+        project_no: projectNo,
+        description: newItemText.trim(),
+        status: 'Open',
+        image_url: newItemImage || null
+      };
       setIssuesList(prev => [...prev, tempIssue]);
     } catch (e) {
       console.error('Failed to add issue:', e.message);
     }
     setNewItemText('');
+    setNewItemImage('');
     setShowAddForm(false);
     setPendingAction(null);
   }
@@ -547,6 +804,11 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
 
   return (
     <div className="card">
+      <ImageLightbox
+        src={activeLightboxSrc}
+        onClose={() => setActiveLightboxSrc(null)}
+      />
+
       <PasswordModal
         isOpen={showAuthModal}
         onClose={() => { setShowAuthModal(false); setPendingAction(null); }}
@@ -570,6 +832,7 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
               projectNo={projectNo}
               onChanged={handleItemChanged}
               onDeleted={handleItemDeleted}
+              onOpenImage={src => setActiveLightboxSrc(src)}
             />
           ))}
         </div>
@@ -583,14 +846,60 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
             onChange={e => setNewItemText(e.target.value)}
             placeholder="Describe the issue or concern…"
             style={{ fontSize: 13, marginBottom: 10 }} />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowAddForm(false); setNewItemText(''); }}>
-              Cancel
+
+          {newItemImage && (
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 10 }}>
+              <img src={newItemImage} alt="Attached preview" style={{ maxHeight: 120, borderRadius: 'var(--r-md)', border: '1px solid var(--border)', objectFit: 'cover' }} />
+              <button
+                type="button"
+                onClick={() => setNewItemImage('')}
+                style={{
+                  position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRadius: '50%',
+                  background: 'var(--red)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >✕</button>
+            </div>
+          )}
+
+          <input type="file" ref={addItemFileInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleAddItemFileChange} />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs"
+              onClick={() => addItemFileInputRef.current?.click()}
+              disabled={uploadingItemImage}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                color: 'var(--blue)',
+                border: '1px solid var(--border)',
+                background: '#FFFFFF',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontWeight: 500,
+                fontSize: 12,
+                cursor: 'pointer'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>{uploadingItemImage ? 'Processing…' : (newItemImage ? 'Change Photo' : 'Attach Photo')}</span>
             </button>
-            {/* Password required on Add Item */}
-            <button type="submit" className="btn btn-primary btn-sm" disabled={!newItemText.trim()}>
-              Add Item
-            </button>
+
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowAddForm(false); setNewItemText(''); setNewItemImage(''); }}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary btn-sm" disabled={!newItemText.trim() || uploadingItemImage}>
+                Add Item
+              </button>
+            </div>
           </div>
         </form>
       ) : (
@@ -617,7 +926,6 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
               onChange={e => setRemarksDraft(e.target.value)} style={{ fontSize: 13, marginBottom: 8 }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
               <button className="btn btn-ghost btn-xs" onClick={() => setEditingRemarks(false)}>Cancel</button>
-              {/* Password required on Save */}
               <button className="btn btn-primary btn-xs" onClick={handleSaveRemarks}>Save Remarks</button>
             </div>
           </div>
@@ -630,3 +938,4 @@ export default function IssuesPanel({ projectNo, issues: initialIssues = [], gen
     </div>
   );
 }
+

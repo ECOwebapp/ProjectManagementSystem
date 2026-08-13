@@ -1,6 +1,6 @@
 // CommentThread.jsx — Threaded discussion backed by Supabase
 import { useState, useEffect, useCallback } from 'react';
-import { getComments, addComment, addReply, resolveComment } from '../../data/projectsRepo.js';
+import { getComments, addComment, addReply, resolveComment, deleteComment } from '../../data/projectsRepo.js';
 import CommentItem from './CommentItem.jsx';
 import AddCommentForm from './AddCommentForm.jsx';
 
@@ -35,6 +35,11 @@ export default function CommentThread({ projectNo }) {
 
   const handleResolveToggle = async (commentId) => {
     await resolveComment(projectNo, commentId);
+    loadComments();
+  };
+
+  const handleDelete = async (commentId) => {
+    await deleteComment(projectNo, commentId);
     loadComments();
   };
 
@@ -99,6 +104,7 @@ export default function CommentThread({ projectNo }) {
               replies={repliesMap[comment.comment_id] || []}
               onAddReply={handleAddReply}
               onResolve={handleResolveToggle}
+              onDelete={handleDelete}
             />
           ))}
         </div>

@@ -1,6 +1,7 @@
 // AddProjectForm.jsx — Modal form to create or edit local project with redesigned layout
 import { useState } from 'react';
 import { addProject, updateProjectHeader } from '../../data/projectsRepo.js';
+import PasswordModal, { isAuthorized } from '../shared/PasswordModal.jsx';
 
 export default function AddProjectForm({ onClose, onSaved, project = null }) {
   const isEdit = !!project;
@@ -16,28 +17,17 @@ export default function AddProjectForm({ onClose, onSaved, project = null }) {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [showAuth, setShowAuth]     = useState(false);
+  const [pendingSave, setPendingSave] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.project_name.trim()) return;
-
+  const executeSubmit = async (payload) => {
     setSubmitting(true);
     try {
-      const payload = {
-        project_name: formData.project_name.trim(),
-        project_id_code: formData.project_id_code.trim() || null,
-        category: formData.category,
-        contractor_names: formData.contractor_name.trim() ? [formData.contractor_name.trim()] : [],
-        original_contract_amount: formData.original_contract_amount ? parseFloat(formData.original_contract_amount) : null,
-        original_completion_date: formData.original_completion_date || null,
-        general_remarks: formData.general_remarks.trim() || null,
-      };
-
       if (isEdit) {
         await updateProjectHeader(project.project_no, payload);
       } else {
@@ -48,11 +38,43 @@ export default function AddProjectForm({ onClose, onSaved, project = null }) {
       alert(`Failed to ${isEdit ? 'update' : 'add'} project: ${err.message}`);
     } finally {
       setSubmitting(false);
+      setPendingSave(null);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.project_name.trim()) return;
+
+    const payload = {
+      project_name: formData.project_name.trim(),
+      project_id_code: formData.project_id_code.trim() || null,
+      category: formData.category,
+      contractor_names: formData.contractor_name.trim() ? [formData.contractor_name.trim()] : [],
+      original_contract_amount: formData.original_contract_amount ? parseFloat(formData.original_contract_amount) : null,
+      original_completion_date: formData.original_completion_date || null,
+      general_remarks: formData.general_remarks.trim() || null,
+    };
+
+    if (isAuthorized()) {
+      executeSubmit(payload);
+    } else {
+      setPendingSave(() => () => executeSubmit(payload));
+      setShowAuth(true);
     }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
+      <PasswordModal
+        isOpen={showAuth}
+        onClose={() => { setShowAuth(false); setPendingSave(null); }}
+        onSuccess={() => { if (pendingSave) pendingSave(); }}
+        title={isEdit ? 'Authorization Required to Edit' : 'Authorization Required to Add'}
+        description={isEdit
+          ? 'Enter authorization password to save changes to this project.'
+          : 'Enter authorization password to add a new project.'}
+      />
       <div className="add-project-modal" onClick={e => e.stopPropagation()}>
         {/* Sticky Header */}
         <div className="modal-header-sticky">

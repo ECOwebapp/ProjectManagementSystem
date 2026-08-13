@@ -135,12 +135,15 @@ export async function updateVariationOrder(projectNo, voId, patch) {
 
 // ─── Issues ───────────────────────────────────────────────────────────────────
 
-export async function addIssue(projectNo, description, status = 'Open') {
-  const { error } = await supabase.from('issue_concern').insert({
+export async function addIssue(projectNo, description, status = 'Open', imageUrl = null) {
+  const payload = {
     project_no: projectNo,
     description,
     status,
-  });
+  };
+  if (imageUrl) payload.image_url = imageUrl;
+
+  const { error } = await supabase.from('issue_concern').insert(payload);
   if (error) throw new Error(error.message);
 }
 
@@ -168,8 +171,8 @@ export async function getComments(projectNo) {
 }
 
 /** Add a top-level comment */
-export async function addComment({ projectNo, personnelId, commenterName, text, targetField = null }) {
-  const { error } = await supabase.from('comment').insert({
+export async function addComment({ projectNo, personnelId, commenterName, text, targetField = null, imageUrl = null }) {
+  const payload = {
     project_no:        projectNo,
     personnel_id:      personnelId || null,
     commenter_name:    commenterName,
@@ -177,20 +180,26 @@ export async function addComment({ projectNo, personnelId, commenterName, text, 
     target_field:      targetField,
     parent_comment_id: null,
     is_resolved:       false,
-  });
+  };
+  if (imageUrl) payload.image_url = imageUrl;
+
+  const { error } = await supabase.from('comment').insert(payload);
   if (error) throw new Error(error.message);
 }
 
 /** Add a reply to an existing comment */
-export async function addReply({ projectNo, personnelId, commenterName, text, parentCommentId }) {
-  const { error } = await supabase.from('comment').insert({
+export async function addReply({ projectNo, personnelId, commenterName, text, parentCommentId, imageUrl = null }) {
+  const payload = {
     project_no:        projectNo,
     personnel_id:      personnelId || null,
     commenter_name:    commenterName,
     comment_text:      text,
     parent_comment_id: parentCommentId,
     is_resolved:       false,
-  });
+  };
+  if (imageUrl) payload.image_url = imageUrl;
+
+  const { error } = await supabase.from('comment').insert(payload);
   if (error) throw new Error(error.message);
 }
 
@@ -204,10 +213,18 @@ export async function resolveComment(projectNo, commentId) {
     .single();
   if (rErr) throw new Error(rErr.message);
 
+  const nextState = !data.is_resolved;
   const { error } = await supabase
     .from('comment')
-    .update({ is_resolved: !data.is_resolved })
+    .update({ is_resolved: nextState })
     .eq('comment_id', commentId);
+  if (error) throw new Error(error.message);
+}
+
+/** Delete a comment and any nested replies */
+export async function deleteComment(projectNo, commentId) {
+  await supabase.from('comment').delete().eq('parent_comment_id', commentId);
+  const { error } = await supabase.from('comment').delete().eq('comment_id', commentId);
   if (error) throw new Error(error.message);
 }
 
