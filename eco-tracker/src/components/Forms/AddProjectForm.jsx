@@ -1,16 +1,18 @@
-// AddProjectForm.jsx — Modal form to create local project with redesigned layout
+// AddProjectForm.jsx — Modal form to create or edit local project with redesigned layout
 import { useState } from 'react';
-import { addProject } from '../../data/projectsRepo.js';
+import { addProject, updateProjectHeader } from '../../data/projectsRepo.js';
 
-export default function AddProjectForm({ onClose, onSaved }) {
+export default function AddProjectForm({ onClose, onSaved, project = null }) {
+  const isEdit = !!project;
+
   const [formData, setFormData] = useState({
-    project_name: '',
-    project_id_code: '',
-    category: 'Proposed', // Default set to Proposed per user specification
-    contractor_name: '',
-    original_contract_amount: '',
-    original_completion_date: '',
-    general_remarks: '',
+    project_name: project?.project_name || '',
+    project_id_code: project?.project_id_code || '',
+    category: project?.category || 'Proposed', // Default set to Proposed per user specification
+    contractor_name: project?.contractors?.[0]?.contractor_name || '',
+    original_contract_amount: project?.original_contract_amount || '',
+    original_completion_date: project?.original_completion_date || '',
+    general_remarks: project?.general_remarks || '',
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +28,7 @@ export default function AddProjectForm({ onClose, onSaved }) {
 
     setSubmitting(true);
     try {
-      await addProject({
+      const payload = {
         project_name: formData.project_name.trim(),
         project_id_code: formData.project_id_code.trim() || null,
         category: formData.category,
@@ -34,10 +36,16 @@ export default function AddProjectForm({ onClose, onSaved }) {
         original_contract_amount: formData.original_contract_amount ? parseFloat(formData.original_contract_amount) : null,
         original_completion_date: formData.original_completion_date || null,
         general_remarks: formData.general_remarks.trim() || null,
-      });
+      };
+
+      if (isEdit) {
+        await updateProjectHeader(project.project_no, payload);
+      } else {
+        await addProject(payload);
+      }
       onSaved();
     } catch (err) {
-      alert(`Failed to add project: ${err.message}`);
+      alert(`Failed to ${isEdit ? 'update' : 'add'} project: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -49,8 +57,10 @@ export default function AddProjectForm({ onClose, onSaved }) {
         {/* Sticky Header */}
         <div className="modal-header-sticky">
           <div>
-            <h2 className="modal-header-title">Add New Project</h2>
-            <div className="modal-header-subtitle">Fill in the project details below</div>
+            <h2 className="modal-header-title">{isEdit ? 'Edit Project' : 'Add New Project'}</h2>
+            <div className="modal-header-subtitle">
+              {isEdit ? 'Modify the project details below' : 'Fill in the project details below'}
+            </div>
           </div>
           <button className="modal-close-btn" onClick={onClose} title="Close">
             ✕
@@ -70,13 +80,13 @@ export default function AddProjectForm({ onClose, onSaved }) {
               <div style={{ marginBottom: 16 }}>
                 <label className="form-label-custom">Project Name *</label>
                 <input
-                  type="text"
-                  name="project_name"
-                  className="form-input-custom"
-                  required
-                  placeholder="e.g. Construction of Solar Farm Phase I"
-                  value={formData.project_name}
-                  onChange={handleChange}
+                   type="text"
+                   name="project_name"
+                   className="form-input-custom"
+                   required
+                   placeholder="e.g. Construction of Solar Farm Phase I"
+                   value={formData.project_name}
+                   onChange={handleChange}
                 />
               </div>
 
@@ -180,7 +190,7 @@ export default function AddProjectForm({ onClose, onSaved }) {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={submitting || !formData.project_name.trim()}>
-              {submitting ? 'Saving...' : 'Save Project'}
+              {submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Save Project')}
             </button>
           </div>
         </form>
@@ -188,3 +198,4 @@ export default function AddProjectForm({ onClose, onSaved }) {
     </div>
   );
 }
+

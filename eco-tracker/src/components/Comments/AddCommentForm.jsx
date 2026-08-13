@@ -17,11 +17,15 @@ export default function AddCommentForm({
   const [newPersonName, setNewPersonName] = useState('');
   const [newPersonTitle, setNewPersonTitle] = useState('');
 
-  const loadPersonnel = () => {
-    const list = getPersonnel();
-    setPersonnelList(list);
-    if (list.length > 0 && !selectedPersonnelId) {
-      setSelectedPersonnelId(list[0].personnel_id);
+  const loadPersonnel = async () => {
+    try {
+      const list = await getPersonnel();
+      setPersonnelList(list);
+      if (list.length > 0 && !selectedPersonnelId) {
+        setSelectedPersonnelId(list[0].personnel_id);
+      }
+    } catch (e) {
+      console.error('Failed to load personnel:', e.message);
     }
   };
 
@@ -43,15 +47,19 @@ export default function AddCommentForm({
     if (onCancel) onCancel();
   };
 
-  const handleAddInlinePerson = (e) => {
+  const handleAddInlinePerson = async (e) => {
     e.preventDefault();
     if (!newPersonName.trim()) return;
-    const created = addPersonnel({ name: newPersonName.trim(), title: newPersonTitle.trim() });
-    setNewPersonName('');
-    setNewPersonTitle('');
-    setShowAddInline(false);
-    loadPersonnel();
-    setSelectedPersonnelId(created.personnel_id);
+    try {
+      const created = await addPersonnel({ name: newPersonName.trim(), title: newPersonTitle.trim() });
+      setNewPersonName('');
+      setNewPersonTitle('');
+      setShowAddInline(false);
+      await loadPersonnel();
+      if (created) setSelectedPersonnelId(created.personnel_id);
+    } catch (err) {
+      console.error('Failed to add personnel:', err.message);
+    }
   };
 
   return (

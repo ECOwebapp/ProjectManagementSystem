@@ -79,7 +79,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
     setEditingHeader(true);
   };
 
-  const executeHeaderSave = () => {
+  const executeHeaderSave = async () => {
     const updatedContractors = contractorsText
       .split(/[,;\n]/)
       .map(s => s.trim())
@@ -96,7 +96,11 @@ export default function ProjectDetail({ projectNo, onBack }) {
       new_completion_date: newCompletion.trim() || null,
     };
 
-    updateProjectHeader(project.project_no, patch);
+    try {
+      await updateProjectHeader(project.project_no, patch);
+    } catch (e) {
+      console.error('Failed to save project header:', e.message);
+    }
 
     setProject(prev => ({
       ...prev,

@@ -6,11 +6,15 @@ export default function AddPersonnelForm({ onClose, onSaved }) {
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const created = addPersonnel({ name: name.trim(), title: title.trim() });
-    onSaved(created);
+    try {
+      const created = await addPersonnel({ name: name.trim(), title: title.trim() });
+      onSaved(created);
+    } catch (err) {
+      console.error('Failed to save personnel:', err.message);
+    }
   };
 
   return (

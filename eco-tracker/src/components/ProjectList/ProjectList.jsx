@@ -1,6 +1,6 @@
 // ProjectList.jsx — Project list with stat cards & redesigned table
 import { useState, useEffect } from 'react';
-import { getProjects } from '../../data/projectsRepo.js';
+import { getProjects, deleteProject } from '../../data/projectsRepo.js';
 import FilterBar from '../shared/FilterBar.jsx';
 import Badge, { categoryVariant, formatCurrency } from '../shared/Badge.jsx';
 import AddProjectForm from '../Forms/AddProjectForm.jsx';
@@ -88,6 +88,23 @@ export default function ProjectList({ onSelectProject }) {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [showAddProject, setShowAddProject] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [deletingProject, setDeletingProject] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deletingProject) return;
+    setDeleting(true);
+    try {
+      await deleteProject(deletingProject.project_no);
+      setDeletingProject(null);
+      load();
+    } catch (e) {
+      alert(`Failed to delete project: ${e.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -190,6 +207,7 @@ export default function ProjectList({ onSelectProject }) {
                 <th>Contractor(s)</th>
                 <th>Contract Amount</th>
                 <th>Completion Date</th>
+                <th style={{ width: 140, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -246,6 +264,40 @@ export default function ProjectList({ onSelectProject }) {
                     <td className="text-sm text-muted" style={{ whiteSpace: 'nowrap' }}>
                       {completionDate ? completionDate : <span className="text-pending">TBD</span>}
                     </td>
+                    <td onClick={(e) => e.stopPropagation()} style={{ width: 90 }}>
+                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                         <button
+                           title="Edit project"
+                           className="btn btn-ghost btn-xs"
+                           style={{
+                             color: 'var(--blue)',
+                             borderColor: 'transparent',
+                             background: 'var(--blue-light)',
+                             padding: '4px 6px',
+                             borderRadius: '6px',
+                             lineHeight: 1,
+                           }}
+                           onClick={() => setEditingProject(p)}
+                         >
+                           <span className="mdi mdi-pencil-circle-outline" style={{ fontSize: 20, display: 'block' }} />
+                         </button>
+                         <button
+                           title="Delete project"
+                           className="btn btn-ghost btn-xs"
+                           style={{
+                             color: 'var(--red)',
+                             borderColor: 'transparent',
+                             background: 'var(--red-light)',
+                             padding: '4px 6px',
+                             borderRadius: '6px',
+                             lineHeight: 1,
+                           }}
+                           onClick={() => setDeletingProject(p)}
+                         >
+                           <span className="mdi mdi-delete-circle-outline" style={{ fontSize: 20, display: 'block' }} />
+                         </button>
+                       </div>
+                     </td>
                   </tr>
                 );
               })}
@@ -259,6 +311,55 @@ export default function ProjectList({ onSelectProject }) {
           onClose={() => setShowAddProject(false)}
           onSaved={() => { setShowAddProject(false); load(); }}
         />
+      )}
+
+      {editingProject && (
+        <AddProjectForm
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onSaved={() => { setEditingProject(null); load(); }}
+        />
+      )}
+
+      {deletingProject && (
+        <div className="modal-overlay" onClick={() => setDeletingProject(null)}>
+          <div className="add-project-modal" style={{ maxWidth: 450, padding: 24 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center' }}>
+              <div style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'var(--red-light)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--red)',
+                marginBottom: 8
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 className="modal-header-title" style={{ fontSize: 18, marginBottom: 8 }}>Delete Project</h3>
+                <p className="page-subtitle" style={{ fontSize: 13, color: 'var(--gray)', padding: '0 12px' }}>
+                  Are you sure you want to delete <strong>{deletingProject.project_name}</strong>? This action cannot be undone and will permanently delete all related issues, progress updates, variation orders, and comments.
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <button className="btn btn-ghost" onClick={() => setDeletingProject(null)} disabled={deleting}>
+                Cancel
+              </button>
+              <button className="btn" style={{ background: 'var(--red)', color: '#fff', borderColor: 'var(--red)' }} onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete Project'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

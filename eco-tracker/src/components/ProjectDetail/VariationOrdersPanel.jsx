@@ -72,22 +72,22 @@ function VOItem({ vo, projectNo, onDelete, onStatusChange, onUpdateVO }) {
   };
 
   /* ── Execute saves (called after password passes) ── */
-  const executeStatusSave = (finalStatus) => {
-    const updated = updateVariationOrder(projectNo, vo.vo_id, { status: finalStatus });
-    if (updated) onStatusChange(vo.vo_id, finalStatus);
+  const executeStatusSave = async (finalStatus) => {
+    await updateVariationOrder(projectNo, vo.vo_id, { status: finalStatus });
+    onStatusChange(vo.vo_id, finalStatus);
     setEditingStatus(false);
     setPendingAction(null);
   };
 
-  const executeAmountSave = (patch) => {
-    updateVariationOrder(projectNo, vo.vo_id, patch);
+  const executeAmountSave = async (patch) => {
+    await updateVariationOrder(projectNo, vo.vo_id, patch);
     if (onUpdateVO) onUpdateVO(vo.vo_id, patch);
     setEditingAmount(false);
     setPendingAction(null);
   };
 
-  const executeDelete = () => {
-    deleteVariationOrder(projectNo, vo.vo_id);
+  const executeDelete = async () => {
+    await deleteVariationOrder(projectNo, vo.vo_id);
     onDelete(vo.vo_id);
     setPendingAction(null);
   };
@@ -315,8 +315,15 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
   const [customStatusAdd, setCustomStatusAdd] = useState('');
   const [error, setError] = useState('');
 
-  const executeAddVO = (newVO) => {
-    setVoList(prev => [...prev, newVO]);
+  const executeAddVO = async (payload) => {
+    try {
+      await addVariationOrder(projectNo, payload);
+      // Re-shape for local state (vo_id will be assigned by Supabase; reload from DB or use temp)
+      const tempVO = { vo_id: `temp-${Date.now()}`, project_no: projectNo, ...payload, vo_number: (voList.length + 1) };
+      setVoList(prev => [...prev, tempVO]);
+    } catch (e) {
+      console.error('Failed to add VO:', e.message);
+    }
     setAmount(''); setRevisedAmount(''); setDetails('');
     setStatusSelect('Subject for BOR Approval'); setCustomStatusAdd('');
     setDateSubmitted(todayISO); setShowAddForm(false);
@@ -345,9 +352,9 @@ export default function VariationOrdersPanel({ projectNo, variationOrders: initi
       status: finalStatus,
     };
     if (isAuthorized()) {
-      executeAddVO(addVariationOrder(projectNo, payload));
+      executeAddVO(payload);
     } else {
-      setPendingAction(() => () => executeAddVO(addVariationOrder(projectNo, payload)));
+      setPendingAction(() => () => executeAddVO(payload));
       setShowAuthModal(true);
     }
   };
