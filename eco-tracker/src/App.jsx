@@ -11,9 +11,9 @@ export default function App() {
       {/* Header */}
       <header className="app-header">
         <a href="#" className="logo" onClick={(e) => { e.preventDefault(); setSelectedProjectNo(null); }}>
-          <div className="logo-icon">ECO</div>
+          <img src="/images/CSU-LOGO.png" alt="CSU Logo" className="logo-img" />
           <div>
-            <div className="logo-text">Infrastructure Tracker</div>
+            <div className="logo-text">INFRASTRUCTURE TRACKER</div>
             <div className="logo-sub">Caraga State University</div>
           </div>
         </a>

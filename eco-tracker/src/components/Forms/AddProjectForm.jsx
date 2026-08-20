@@ -12,6 +12,7 @@ export default function AddProjectForm({ onClose, onSaved, project = null }) {
     category: project?.category || 'Proposed', // Default set to Proposed per user specification
     contractor_name: project?.contractors?.[0]?.contractor_name || '',
     original_contract_amount: project?.original_contract_amount || '',
+    start_date: project?.start_date || '',
     original_completion_date: project?.original_completion_date || '',
     general_remarks: project?.general_remarks || '',
   });
@@ -52,6 +53,7 @@ export default function AddProjectForm({ onClose, onSaved, project = null }) {
       category: formData.category,
       contractor_names: formData.contractor_name.trim() ? [formData.contractor_name.trim()] : [],
       original_contract_amount: formData.original_contract_amount ? parseFloat(formData.original_contract_amount) : null,
+      start_date: formData.start_date || null,
       original_completion_date: formData.original_completion_date || null,
       general_remarks: formData.general_remarks.trim() || null,
     };
@@ -173,15 +175,26 @@ export default function AddProjectForm({ onClose, onSaved, project = null }) {
                   />
                 </div>
                 <div>
-                  <label className="form-label-custom">Original Completion Date</label>
+                  <label className="form-label-custom">Start Date</label>
                   <input
                     type="date"
-                    name="original_completion_date"
+                    name="start_date"
                     className="form-input-custom"
-                    value={formData.original_completion_date}
+                    value={formData.start_date}
                     onChange={handleChange}
                   />
                 </div>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <label className="form-label-custom">Original Completion Date</label>
+                <input
+                  type="date"
+                  name="original_completion_date"
+                  className="form-input-custom"
+                  value={formData.original_completion_date}
+                  onChange={handleChange}
+                />
               </div>
             </div>
 

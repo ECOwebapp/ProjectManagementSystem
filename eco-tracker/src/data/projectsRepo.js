@@ -84,6 +84,7 @@ export async function addProject(data) {
       contractors,
       original_contract_amount: data.original_contract_amount || null,
       revised_contract_amount:  data.revised_contract_amount || null,
+      start_date:               data.start_date || null,
       original_completion_date: data.original_completion_date || null,
       new_completion_date:      data.new_completion_date || null,
       general_remarks:          data.general_remarks || null,

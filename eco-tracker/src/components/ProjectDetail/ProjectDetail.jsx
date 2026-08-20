@@ -25,6 +25,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
   const [contractorsText, setContractorsText] = useState('');
   const [origAmount, setOrigAmount] = useState('');
   const [revisedAmount, setRevisedAmount] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [origCompletion, setOrigCompletion] = useState('');
   const [newCompletion, setNewCompletion] = useState('');
 
@@ -74,6 +75,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
     setContractorsText(contractorNames.join(', '));
     setOrigAmount(project.original_contract_amount !== null && project.original_contract_amount !== undefined ? project.original_contract_amount : '');
     setRevisedAmount(project.revised_contract_amount !== null && project.revised_contract_amount !== undefined ? project.revised_contract_amount : '');
+    setStartDate(project.start_date || '');
     setOrigCompletion(project.original_completion_date || '');
     setNewCompletion(project.new_completion_date || '');
     setEditingHeader(true);
@@ -92,6 +94,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
       contractor_names: updatedContractors,
       original_contract_amount: origAmount ? parseFloat(origAmount) : null,
       revised_contract_amount: revisedAmount ? parseFloat(revisedAmount) : null,
+      start_date: startDate.trim() || null,
       original_completion_date: origCompletion.trim() || null,
       new_completion_date: newCompletion.trim() || null,
     };
@@ -229,7 +232,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
                 <div>
                   <label className="form-label" style={{ fontSize: 11 }}>Original Amount (₱)</label>
                   <input
@@ -251,6 +254,17 @@ export default function ProjectDetail({ projectNo, onBack }) {
                     placeholder="Revised amount"
                     value={revisedAmount}
                     onChange={e => setRevisedAmount(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: 11 }}>Start Date</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. May 10, 2025"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
                   />
                 </div>
 
@@ -293,7 +307,7 @@ export default function ProjectDetail({ projectNo, onBack }) {
           )}
         </div>
 
-        {/* 5-Column Info Grid */}
+        {/* 6-Column Info Grid */}
         {!editingHeader && (
           <div className="detail-info-grid">
             <div className="detail-grid-cell">
@@ -314,6 +328,13 @@ export default function ProjectDetail({ projectNo, onBack }) {
               <div className="cell-label">Revised Amount</div>
               <div className={`cell-value ${hasRevisedAmount ? 'value-blue' : 'value-mono'}`}>
                 {formatCurrency(project.revised_contract_amount)}
+              </div>
+            </div>
+
+            <div className="detail-grid-cell">
+              <div className="cell-label">Start Date</div>
+              <div className="cell-value">
+                {project.start_date || 'N/A'}
               </div>
             </div>
 

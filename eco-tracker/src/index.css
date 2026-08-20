@@ -111,7 +111,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   background: linear-gradient(135deg, var(--navy), var(--navy-2));
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0 var(--sp-6);
-  height: 60px;
+  height: 66px;
   display: flex;
   align-items: center;
   gap: var(--sp-4);
@@ -124,7 +124,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .app-header .logo {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
+  gap: 15px;
   text-decoration: none;
 }
 
@@ -144,11 +144,32 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   box-shadow: 0 2px 6px rgba(36, 81, 184, 0.4);
 }
 
+.app-header .logo-img {
+  height: 54px;
+  width: auto;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px;
+  border-radius: 10px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  flex-shrink: 0;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.app-header .logo:hover .logo-img {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.02);
+}
+
 .app-header .logo-text {
-  font-family: var(--font-heading);
-  font-size: 15px;
+  font-family: var(--font-body);
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: #FFFFFF;
+  line-height: 1.2;
 }
 
 .app-header .logo-sub {
@@ -156,6 +177,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-size: 11px;
   color: #9FB0D0;
   font-weight: 400;
+  margin-top: 4px;
 }
 
 .app-header .header-right {
@@ -772,10 +794,10 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   margin-top: var(--sp-2);
 }
 
-/* 5-Column Grid */
+/* 6-Column Grid */
 .detail-info-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   border-top: 1px solid var(--border);
   background: #FAFAFA;
 }
@@ -1545,16 +1567,25 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 
   .app-header .logo-text {
     font-size: 13.5px;
+    letter-spacing: 0.5px;
   }
 
   .app-header .logo-sub {
     font-size: 10px;
+    margin-top: 2px;
   }
 
   .app-header .logo-icon {
     width: 32px;
     height: 32px;
     font-size: 11px;
+  }
+
+  .app-header .logo-img {
+    height: 40px;
+    width: auto;
+    padding: 4px;
+    border-radius: 8px;
   }
 
   .main-content {
